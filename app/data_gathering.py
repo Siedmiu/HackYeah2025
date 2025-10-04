@@ -201,7 +201,7 @@ class DataGatheringWindow(QDialog):
             self.device_input.setEnabled(False)
             self.activity_combo.setEnabled(False)
             self.custom_activity_input.setEnabled(False)
-            self.browse_button.setEnabled(False)
+            #self.browse_button.setEnabled(False)
             
             self.add_status(f"Recording started: {activity}")
             self.add_status(f"Participant: {self.participant_input.value()}, Device: {self.device_input.text()}")
@@ -225,7 +225,7 @@ class DataGatheringWindow(QDialog):
         self.device_input.setEnabled(True)
         self.activity_combo.setEnabled(True)
         self.custom_activity_input.setEnabled(True)
-        self.browse_button.setEnabled(True)
+        #self.browse_button.setEnabled(True)
         
         self.add_status(f"Recording stopped. Total samples: {self.sample_count}")
         

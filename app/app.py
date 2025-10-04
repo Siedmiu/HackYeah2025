@@ -47,6 +47,10 @@ class SerialReader(QThread):
             'joy_rx': 2048, 'joy_ry': 2048, 'joy_rb': 0
         }
 
+        self.is_connected = False
+
+        self.debug = debug  # Flaga debugowania
+
     def connect(self, port):
         """Connect to a specific port"""
         print(f"[DEBUG] connect() called with port: {port}")
@@ -115,6 +119,7 @@ class SerialReader(QThread):
         print("[DEBUG] run() method started")
         
         if not self.port:
+            self.is_connected = False
             print("[DEBUG] No port specified, emitting error signal")
             self.connection_status.emit(False, "No port specified")
             return
@@ -125,6 +130,9 @@ class SerialReader(QThread):
             print(f"[DEBUG] Serial port opened successfully")
             
             self.running = True
+            self.is_connected = True
+
+            print(f"[DEBUG] Setting running=True, emitting connection status")
             self.connection_status.emit(True, f"Connected to {self.port}")
 
             # Odczekaj na inicjalizację Arduino
@@ -249,6 +257,9 @@ class SerialReader(QThread):
             print(f"[DEBUG] ✗✗✗ SERIAL EXCEPTION: {type(e).__name__}: {e}")
             self.connection_status.emit(False, f"Connection failed: {e}")
         except Exception as e:
+            print(f"Serial error: {e}")
+            self.is_connected = False 
+
             print(f"[DEBUG] ✗✗✗ UNEXPECTED EXCEPTION: {type(e).__name__}: {e}")
             import traceback
             traceback.print_exc()
@@ -259,12 +270,18 @@ class SerialReader(QThread):
                 self.csv_file.close()
             if self.serial_conn and self.serial_conn.is_open:
                 self.serial_conn.close()
+                self.is_connected = False 
+                print("[DEBUG] Serial connection closed")
+            print("[DEBUG] Emitting disconnected signal...")
             self.connection_status.emit(False, "Disconnected")
             print("[DEBUG] run() method finished")
 
     def stop(self):
         print("[DEBUG] stop() called")
         self.running = False
+        self.is_connected = False
+
+        print("[DEBUG] Waiting for thread to finish...")
         self.wait()
 
 def find_arduino_port():
