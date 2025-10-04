@@ -35,6 +35,15 @@ class SerialReader(QThread):
         try:
             self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
             self.running = True
+
+            # Reset Arduino to get fresh header (DTR pulse)
+            print("Resetting Arduino...")
+            self.serial_conn.setDTR(False)
+            import time
+            time.sleep(0.1)
+            self.serial_conn.setDTR(True)
+            time.sleep(2)  # Wait for Arduino to boot
+
             self.connection_status.emit(True, f"Connected to {self.port}")
 
             # Create CSV file for logging
@@ -44,25 +53,43 @@ class SerialReader(QThread):
 
             # Skip initial debug messages and wait for header
             header_found = False
-            while self.running and not header_found:
+            print("Waiting for CSV header...")
+            timeout_counter = 0
+            while self.running and not header_found and timeout_counter < 100:
                 line = self.serial_conn.readline().decode('utf-8', errors='ignore').strip()
                 if line.startswith('timestamp,'):
                     self.csv_writer.writerow(line.split(','))
                     header_found = True
+                    print(f"CSV header found: {line}")
+                    print(f"Header has {len(line.split(','))} columns")
+                elif line:
+                    print(f"Skipping: {line[:80]}")
+                timeout_counter += 1
+
+            if not header_found:
+                print("⚠ Warning: CSV header not found, but continuing anyway...")
+                # Write default header
+                default_header = "timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb"
+                self.csv_writer.writerow(default_header.split(','))
 
             # Read and process CSV data
+            print("Starting data read loop...")
+            data_count = 0
             while self.running:
                 line = self.serial_conn.readline().decode('utf-8', errors='ignore').strip()
 
                 if line and ',' in line:
                     try:
                         values = line.split(',')
-                        if len(values) == 23:  # Ensure we have all expected values
+                        if len(values) != 22:
+                            print(f"⚠ Received {len(values)} values (expected 22): {line[:100]}")
+
+                        if len(values) == 22:  # Arduino sends 22 values (no temperature)
                             # Write to CSV file
                             self.csv_writer.writerow(values)
                             self.csv_file.flush()
 
-                            # Parse data into dictionary
+                            # Parse data into dictionary (no mpu_temp)
                             data = {
                                 'timestamp': int(values[0]),
                                 'mpu_ax': float(values[1]),
@@ -71,28 +98,30 @@ class SerialReader(QThread):
                                 'mpu_gx': float(values[4]),
                                 'mpu_gy': float(values[5]),
                                 'mpu_gz': float(values[6]),
-                                'mpu_temp': float(values[7]),
-                                'adxl_ax': float(values[8]),
-                                'adxl_ay': float(values[9]),
-                                'adxl_az': float(values[10]),
-                                'l3gd_gx': float(values[11]),
-                                'l3gd_gy': float(values[12]),
-                                'l3gd_gz': float(values[13]),
-                                'lsm_ax': float(values[14]),
-                                'lsm_ay': float(values[15]),
-                                'lsm_az': float(values[16]),
-                                'joy_lx': int(values[17]),
-                                'joy_ly': int(values[18]),
-                                'joy_lb': int(values[19]),
-                                'joy_rx': int(values[20]),
-                                'joy_ry': int(values[21]),
-                                'joy_rb': int(values[22])
+                                'adxl_ax': float(values[7]),
+                                'adxl_ay': float(values[8]),
+                                'adxl_az': float(values[9]),
+                                'l3gd_gx': float(values[10]),
+                                'l3gd_gy': float(values[11]),
+                                'l3gd_gz': float(values[12]),
+                                'lsm_ax': int(values[13]),
+                                'lsm_ay': int(values[14]),
+                                'lsm_az': int(values[15]),
+                                'joy_lx': int(values[16]),
+                                'joy_ly': int(values[17]),
+                                'joy_lb': int(values[18]),
+                                'joy_rx': int(values[19]),
+                                'joy_ry': int(values[20]),
+                                'joy_rb': int(values[21])
                             }
 
                             # Emit signal with parsed data
                             self.data_received.emit(data)
+                            data_count += 1
+                            if data_count % 50 == 0:  # Print every 50 packets
+                                print(f"✓ {data_count} packets processed successfully")
                     except (ValueError, IndexError) as e:
-                        print(f"Error parsing line: {line} - {e}")
+                        print(f"Error parsing line: {line[:100]} - {e}")
 
         except Exception as e:
             print(f"Serial error: {e}")

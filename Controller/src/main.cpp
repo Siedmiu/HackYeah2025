@@ -14,7 +14,7 @@
 #define VRy_R 35
 #define SW_L 12
 #define SW_R 14
-#define I2C_FREQ 100000  //100kHz
+#define I2C_FREQ 400000  //400kHz (Fast Mode I2C)
 
 //========== UNIFIED SENSOR OBJECTS ==========
 Adafruit_MPU6050 mpu;
@@ -52,7 +52,7 @@ void setup() {
     //MPU6050 config
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // Accel range: ±8G
     mpu.setGyroRange(MPU6050_RANGE_250_DEG); //Gyro range: ±250°/s (360° full range)
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ); //Filter: 21 Hz
+    mpu.setFilterBandwidth(MPU6050_BAND_260_HZ); //Filter: 260 Hz (increased for higher sample rate)
   }
   
   //ADXL345 init
@@ -64,7 +64,7 @@ void setup() {
     
     //ADXL345 config
     adxl.setRange(ADXL345_RANGE_8_G); //Range: ±8G
-    adxl.setDataRate(ADXL345_DATARATE_100_HZ); //Data rate: 100 Hz
+    adxl.setDataRate(ADXL345_DATARATE_400_HZ); //Data rate: 400 Hz (increased sample rate)
   }
   
   //L3GD20H init (AltIMU-10 Gyro)
@@ -131,7 +131,7 @@ void sendCSVData() {
 
 void loop() {
   sendCSVData();
-  delay(100);  // 10Hz sampling rate
+  delay(10);  // 100Hz sampling rate (increased from 10Hz)
 }
 
 //gyro rad/s to deg/s

@@ -3,12 +3,15 @@ from PyQt5.QtCore import Qt
 import serial.tools.list_ports
 import parameters
 from data_gathering import DataGatheringWindow
+from imu_visualizer import IMUVisualizerWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.serial_reader = None
         self.is_connected = False
+        self.visualizer_window = None
+        self.data_window = None
         self.init_ui()
     
     def init_ui(self):
@@ -72,6 +75,11 @@ class MainWindow(QMainWindow):
         self.button_hotkey.setFixedSize(200, 50)
         layout.addWidget(self.button_hotkey, alignment=Qt.AlignCenter)
 
+        self.button_visualizer = QPushButton("Wizualizacja IMU (Live)")
+        self.button_visualizer.clicked.connect(self.on_button_visualizer_click)
+        self.button_visualizer.setFixedSize(200, 50)
+        layout.addWidget(self.button_visualizer, alignment=Qt.AlignCenter)
+
         self.button_close = QPushButton("Wyjdź")
         self.button_close.clicked.connect(self.on_button_close_click)
         self.button_close.setFixedSize(200, 50)
@@ -102,6 +110,19 @@ class MainWindow(QMainWindow):
     def on_button_data_click(self):
         self.create_data_gathering_window()
 
+    def on_button_visualizer_click(self):
+        """Open IMU visualizer window"""
+        if not self.is_connected:
+            self.label.setText("Error: Please connect to a device first!")
+            return
+
+        if self.visualizer_window is None or not self.visualizer_window.isVisible():
+            self.visualizer_window = IMUVisualizerWindow(self)
+            self.visualizer_window.show()
+            self.label.setText("IMU Visualizer opened")
+        else:
+            self.visualizer_window.raise_()
+            self.visualizer_window.activateWindow()
 
     def create_data_gathering_window(self):
         #choose player id, movement type, device id
@@ -147,13 +168,17 @@ class MainWindow(QMainWindow):
         if parameters.game_state == "Game":
             status_text = f"IMU Data:\n"
             status_text += f"MPU Accel: ({data['mpu_ax']:.2f}, {data['mpu_ay']:.2f}, {data['mpu_az']:.2f}) m/s²\n"
-            status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
-            status_text += f"Temp: {data['mpu_temp']:.1f}°C\n\n"
+            status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n\n"
             status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
             status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}"
             self.label.setText(status_text)
         if self.data_window and self.data_window.is_recording:
             self.data_window.record_data(data)
+
+        # Update visualizer if open
+        if self.visualizer_window and self.visualizer_window.isVisible():
+            print(f"MainWindow sending data to visualizer: {list(data.keys())}")
+            self.visualizer_window.update_data(data)
 
     def set_serial_reader(self, serial_reader):
         """Set the serial reader instance"""
