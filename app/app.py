@@ -20,6 +20,7 @@ class SerialReader(QThread):
         self.serial_conn = None
         self.csv_file = None
         self.csv_writer = None
+        self.is_connected = False
 
     def connect(self, port):
         """Connect to a specific port"""
@@ -29,12 +30,14 @@ class SerialReader(QThread):
 
     def run(self):
         if not self.port:
+            self.is_connected = False
             self.connection_status.emit(False, "No port specified")
             return
 
         try:
             self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
             self.running = True
+            self.is_connected = True
             self.connection_status.emit(True, f"Connected to {self.port}")
 
             # Create CSV file for logging
@@ -96,16 +99,19 @@ class SerialReader(QThread):
 
         except Exception as e:
             print(f"Serial error: {e}")
+            self.is_connected = False 
             self.connection_status.emit(False, f"Connection failed: {e}")
         finally:
             if self.csv_file:
                 self.csv_file.close()
             if self.serial_conn and self.serial_conn.is_open:
                 self.serial_conn.close()
+                self.is_connected = False 
             self.connection_status.emit(False, "Disconnected")
 
     def stop(self):
         self.running = False
+        self.is_connected = False
         self.wait()
 
 def find_arduino_port():
