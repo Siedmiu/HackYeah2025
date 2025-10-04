@@ -24,8 +24,8 @@ class Joystick():
         self.prev_right_button = 0
         
         # Mapowanie klawiszy dla WSAD i strzałek
-        self.wsad_keys = {'up': 'w', 'down': 's', 'left': 'a', 'right': 'd'}
-        self.arrow_keys = {'up': 'up', 'down': 'down', 'left': 'left', 'right': 'right'}
+        self.wsad_keys = {'up': 's', 'down': 'w', 'left': 'a', 'right': 'd'}
+        self.arrow_keys = {'up': 'left', 'down': 'right', 'left': 'down', 'right': 'up'}
         
         # Aktualnie wciśnięte klawisze (do śledzenia)
         self.pressed_keys = set()
