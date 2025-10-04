@@ -21,7 +21,11 @@ class SerialReader(QThread):
         self.serial_conn = None
         self.csv_file = None
         self.csv_writer = None
+<<<<<<< HEAD
+        self.is_connected = False
+=======
         self.debug = debug  # Flaga debugowania
+>>>>>>> 4471f3af9e206ae29e88eadf9b0de335e7715145
 
     def connect(self, port):
         """Connect to a specific port"""
@@ -37,7 +41,11 @@ class SerialReader(QThread):
         print("[DEBUG] run() method started")
         
         if not self.port:
+<<<<<<< HEAD
+            self.is_connected = False
+=======
             print("[DEBUG] No port specified, emitting error signal")
+>>>>>>> 4471f3af9e206ae29e88eadf9b0de335e7715145
             self.connection_status.emit(False, "No port specified")
             return
 
@@ -48,7 +56,11 @@ class SerialReader(QThread):
             print(f"[DEBUG] Port info - is_open: {self.serial_conn.is_open}")
             
             self.running = True
+<<<<<<< HEAD
+            self.is_connected = True
+=======
             print(f"[DEBUG] Setting running=True, emitting connection status")
+>>>>>>> 4471f3af9e206ae29e88eadf9b0de335e7715145
             self.connection_status.emit(True, f"Connected to {self.port}")
 
             # Odczekaj na inicjalizację Arduino
@@ -270,10 +282,15 @@ class SerialReader(QThread):
             print(f"[DEBUG] Exception occurred at line: {sys.exc_info()[2].tb_lineno}")
             self.connection_status.emit(False, f"Connection failed: {e}")
         except Exception as e:
+<<<<<<< HEAD
+            print(f"Serial error: {e}")
+            self.is_connected = False 
+=======
             print(f"[DEBUG] ✗✗✗ UNEXPECTED EXCEPTION: {type(e).__name__}: {e}")
             print(f"[DEBUG] Exception occurred at line: {sys.exc_info()[2].tb_lineno}")
             import traceback
             traceback.print_exc()
+>>>>>>> 4471f3af9e206ae29e88eadf9b0de335e7715145
             self.connection_status.emit(False, f"Connection failed: {e}")
         finally:
             print("[DEBUG] Entering finally block - cleaning up...")
@@ -284,15 +301,23 @@ class SerialReader(QThread):
             if self.serial_conn and self.serial_conn.is_open:
                 print("[DEBUG] Closing serial connection...")
                 self.serial_conn.close()
+<<<<<<< HEAD
+                self.is_connected = False 
+=======
                 print("[DEBUG] Serial connection closed")
             print("[DEBUG] Emitting disconnected signal...")
+>>>>>>> 4471f3af9e206ae29e88eadf9b0de335e7715145
             self.connection_status.emit(False, "Disconnected")
             print("[DEBUG] run() method finished")
 
     def stop(self):
         print("[DEBUG] stop() called")
         self.running = False
+<<<<<<< HEAD
+        self.is_connected = False
+=======
         print("[DEBUG] Waiting for thread to finish...")
+>>>>>>> 4471f3af9e206ae29e88eadf9b0de335e7715145
         self.wait()
         print("[DEBUG] Thread finished")
 

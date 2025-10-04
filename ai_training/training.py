@@ -324,7 +324,7 @@ def evaluate_model(model: keras.Model, X_test: np.ndarray, y_test: np.ndarray,
     print("\n" + "="*60)
     print("CLASSIFICATION REPORT")
     print("="*60)
-    print(classification_report(y_test, y_pred, 
+    print(classification_report(y_test, y_pred
                                 target_names=label_encoder.classes_))
     
     # Confusion matrix
