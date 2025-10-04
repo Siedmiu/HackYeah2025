@@ -9,6 +9,11 @@ class IMUVisualizerWindow(QMainWindow):
         super().__init__(parent)
         self.init_ui()
 
+        # Plot window configuration
+        self.window_seconds = 6.0
+        self.min_y_range = 1.0
+        self.range_padding = 0.25
+
         # Data buffers (store last 500 samples)
         self.max_samples = 500
         self.timestamps = deque(maxlen=self.max_samples)
@@ -54,7 +59,7 @@ class IMUVisualizerWindow(QMainWindow):
         main_layout.addWidget(title)
 
         # Create plot widgets using pyqtgraph for better performance
-        pg.setConfigOptions(antialias=True)
+        pg.setConfigOptions(antialias=False)
 
         # MPU6050 Accelerometer Plot
         self.mpu_accel_plot = pg.PlotWidget(title="MPU6050 Accelerometer (m/s²)")
@@ -62,8 +67,11 @@ class IMUVisualizerWindow(QMainWindow):
         self.mpu_accel_plot.setLabel('bottom', 'Time', units='s')
         self.mpu_accel_plot.addLegend()
         self.mpu_ax_curve = self.mpu_accel_plot.plot(pen='r', name='X')
+        self._configure_curve(self.mpu_ax_curve)
         self.mpu_ay_curve = self.mpu_accel_plot.plot(pen='g', name='Y')
+        self._configure_curve(self.mpu_ay_curve)
         self.mpu_az_curve = self.mpu_accel_plot.plot(pen='b', name='Z')
+        self._configure_curve(self.mpu_az_curve)
         main_layout.addWidget(self.mpu_accel_plot)
 
         # MPU6050 Gyroscope Plot
@@ -72,8 +80,11 @@ class IMUVisualizerWindow(QMainWindow):
         self.mpu_gyro_plot.setLabel('bottom', 'Time', units='s')
         self.mpu_gyro_plot.addLegend()
         self.mpu_gx_curve = self.mpu_gyro_plot.plot(pen='r', name='X')
+        self._configure_curve(self.mpu_gx_curve)
         self.mpu_gy_curve = self.mpu_gyro_plot.plot(pen='g', name='Y')
+        self._configure_curve(self.mpu_gy_curve)
         self.mpu_gz_curve = self.mpu_gyro_plot.plot(pen='b', name='Z')
+        self._configure_curve(self.mpu_gz_curve)
         main_layout.addWidget(self.mpu_gyro_plot)
 
         # ADXL345 Accelerometer Plot
@@ -82,8 +93,11 @@ class IMUVisualizerWindow(QMainWindow):
         self.adxl_accel_plot.setLabel('bottom', 'Time', units='s')
         self.adxl_accel_plot.addLegend()
         self.adxl_ax_curve = self.adxl_accel_plot.plot(pen='r', name='X')
+        self._configure_curve(self.adxl_ax_curve)
         self.adxl_ay_curve = self.adxl_accel_plot.plot(pen='g', name='Y')
+        self._configure_curve(self.adxl_ay_curve)
         self.adxl_az_curve = self.adxl_accel_plot.plot(pen='b', name='Z')
+        self._configure_curve(self.adxl_az_curve)
         main_layout.addWidget(self.adxl_accel_plot)
 
         # L3GD20 Gyroscope Plot
@@ -92,8 +106,11 @@ class IMUVisualizerWindow(QMainWindow):
         self.l3gd_gyro_plot.setLabel('bottom', 'Time', units='s')
         self.l3gd_gyro_plot.addLegend()
         self.l3gd_gx_curve = self.l3gd_gyro_plot.plot(pen='r', name='X')
+        self._configure_curve(self.l3gd_gx_curve)
         self.l3gd_gy_curve = self.l3gd_gyro_plot.plot(pen='g', name='Y')
+        self._configure_curve(self.l3gd_gy_curve)
         self.l3gd_gz_curve = self.l3gd_gyro_plot.plot(pen='b', name='Z')
+        self._configure_curve(self.l3gd_gz_curve)
         main_layout.addWidget(self.l3gd_gyro_plot)
 
         # Stats label
@@ -104,12 +121,9 @@ class IMUVisualizerWindow(QMainWindow):
     def update_data(self, data):
         """Update graphs with new sensor data"""
         try:
-            print(f"Visualizer received data: timestamp={data.get('timestamp')}, mpu_ax={data.get('mpu_ax')}")
-
             # Initialize start time on first data point
             if self.start_time is None:
                 self.start_time = data['timestamp']
-                print(f"Visualizer initialized with start_time: {self.start_time}")
 
             # Calculate relative time in seconds
             time_sec = (data['timestamp'] - self.start_time) / 1000.0
@@ -152,27 +166,56 @@ class IMUVisualizerWindow(QMainWindow):
         if len(self.timestamps) < 2:
             return
 
-        t = np.array(self.timestamps)
+        raw_t = np.fromiter(self.timestamps, dtype=float)
+        if raw_t.size < 2:
+            return
+
+        mask = slice(None)
+        if self.window_seconds is not None and raw_t[-1] - raw_t[0] > self.window_seconds:
+            window_mask = raw_t >= (raw_t[-1] - self.window_seconds)
+            if np.count_nonzero(window_mask) >= 2:
+                mask = window_mask
+            else:
+                mask = slice(-min(2, raw_t.size), None)
+
+        t = raw_t[mask]
+
+        mpu_ax = np.fromiter(self.mpu_ax, dtype=float)[mask]
+        mpu_ay = np.fromiter(self.mpu_ay, dtype=float)[mask]
+        mpu_az = np.fromiter(self.mpu_az, dtype=float)[mask]
+        mpu_gx = np.fromiter(self.mpu_gx, dtype=float)[mask]
+        mpu_gy = np.fromiter(self.mpu_gy, dtype=float)[mask]
+        mpu_gz = np.fromiter(self.mpu_gz, dtype=float)[mask]
+        adxl_ax = np.fromiter(self.adxl_ax, dtype=float)[mask]
+        adxl_ay = np.fromiter(self.adxl_ay, dtype=float)[mask]
+        adxl_az = np.fromiter(self.adxl_az, dtype=float)[mask]
+        l3gd_gx = np.fromiter(self.l3gd_gx, dtype=float)[mask]
+        l3gd_gy = np.fromiter(self.l3gd_gy, dtype=float)[mask]
+        l3gd_gz = np.fromiter(self.l3gd_gz, dtype=float)[mask]
 
         # Update MPU6050 accelerometer
-        self.mpu_ax_curve.setData(t, np.array(self.mpu_ax))
-        self.mpu_ay_curve.setData(t, np.array(self.mpu_ay))
-        self.mpu_az_curve.setData(t, np.array(self.mpu_az))
+        self.mpu_ax_curve.setData(t, mpu_ax)
+        self.mpu_ay_curve.setData(t, mpu_ay)
+        self.mpu_az_curve.setData(t, mpu_az)
+        self._update_viewbox(self.mpu_accel_plot, t, (mpu_ax, mpu_ay, mpu_az))
 
         # Update MPU6050 gyroscope
-        self.mpu_gx_curve.setData(t, np.array(self.mpu_gx))
-        self.mpu_gy_curve.setData(t, np.array(self.mpu_gy))
-        self.mpu_gz_curve.setData(t, np.array(self.mpu_gz))
+        self.mpu_gx_curve.setData(t, mpu_gx)
+        self.mpu_gy_curve.setData(t, mpu_gy)
+        self.mpu_gz_curve.setData(t, mpu_gz)
+        self._update_viewbox(self.mpu_gyro_plot, t, (mpu_gx, mpu_gy, mpu_gz))
 
         # Update ADXL345 accelerometer
-        self.adxl_ax_curve.setData(t, np.array(self.adxl_ax))
-        self.adxl_ay_curve.setData(t, np.array(self.adxl_ay))
-        self.adxl_az_curve.setData(t, np.array(self.adxl_az))
+        self.adxl_ax_curve.setData(t, adxl_ax)
+        self.adxl_ay_curve.setData(t, adxl_ay)
+        self.adxl_az_curve.setData(t, adxl_az)
+        self._update_viewbox(self.adxl_accel_plot, t, (adxl_ax, adxl_ay, adxl_az))
 
         # Update L3GD20 gyroscope
-        self.l3gd_gx_curve.setData(t, np.array(self.l3gd_gx))
-        self.l3gd_gy_curve.setData(t, np.array(self.l3gd_gy))
-        self.l3gd_gz_curve.setData(t, np.array(self.l3gd_gz))
+        self.l3gd_gx_curve.setData(t, l3gd_gx)
+        self.l3gd_gy_curve.setData(t, l3gd_gy)
+        self.l3gd_gz_curve.setData(t, l3gd_gz)
+        self._update_viewbox(self.l3gd_gyro_plot, t, (l3gd_gx, l3gd_gy, l3gd_gz))
 
     def update_stats(self, data):
         """Update statistics display"""
@@ -201,3 +244,29 @@ class IMUVisualizerWindow(QMainWindow):
         self.lsm_ay.clear()
         self.lsm_az.clear()
         self.start_time = None
+
+    def _configure_curve(self, curve):
+        curve.setClipToView(True)
+        curve.setDownsampling(auto=True, method='peak')
+        curve.setSkipFiniteCheck(True)
+
+    def _update_viewbox(self, plot_widget, x_data, y_arrays):
+        if x_data.size < 2:
+            return
+
+        plot_item = plot_widget.getPlotItem()
+        view_box = plot_item.getViewBox()
+
+        x_min = float(x_data[0])
+        x_max = float(x_data[-1])
+        view_box.setXRange(x_min, x_max, padding=0.01)
+
+        max_abs = 0.0
+        for arr in y_arrays:
+            if arr.size:
+                finite_vals = arr[np.isfinite(arr)]
+                if finite_vals.size:
+                    max_abs = max(max_abs, float(np.max(np.abs(finite_vals))))
+
+        half_range = max(self.min_y_range / 2.0, max_abs * (1.0 + self.range_padding))
+        view_box.setYRange(-half_range, half_range, padding=0.0)
