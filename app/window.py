@@ -2,6 +2,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBo
 from PyQt5.QtCore import Qt
 import serial.tools.list_ports
 import parameters
+from keybinding_dialog import KeyBindingDialog
+from PyQt5.QtWidgets import QDialog
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -85,7 +88,15 @@ class MainWindow(QMainWindow):
         parameters.game_state = "Game"
 
     def on_button_hotkey_click(self):
-        self.label.setText("Button 2 clicked!")
+        dialog = KeyBindingDialog(self)
+        result = dialog.exec_()
+        
+        if result == QDialog.Accepted:  # Jeśli kliknięto "Zapisz"
+            bindings = dialog.get_bindings()
+            self.label.setText(f"Zapisano przypisania!\n{len(bindings)} klawiszy skonfigurowanych")
+        else:  # Jeśli kliknięto "Anuluj"
+            self.label.setText("Anulowano przypisanie klawiszy")
+
 
     def on_button_calibration_click(self):
         self.label.setText("Button 3 clicked!")
