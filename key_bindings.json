@@ -1,6 +1,6 @@
 {
-    "joy_left": "camera_move",
+    "joy_left": "character_move_wsad",
     "joy_right": "character_move_arrows",
     "joy_lb": "G",
-    "joy_rb": "H"
+    "joy_rb": null
 }
