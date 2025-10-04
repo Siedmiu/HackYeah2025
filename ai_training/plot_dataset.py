@@ -21,26 +21,30 @@ import matplotlib.pyplot as plt
 # filtered = subset
 
 #same but for human movements datset
-data = pd.read_csv("ai_training/dataset/all_activity_data.csv")
+data = pd.read_csv("ai_training/dataset/back_data.csv")
 #how data are saved: Participant_ID,Activity_Type,Accel_X,Accel_Y,Accel_Z,Gyro_X,Gyro_Y,Gyro_Z,Timestamp
 #first line: 1,Walking,-6.752,-1.462,6.634,50.458,-119.29,330.14,1727961275
 
-player_id = 1  
-player_data = data[data["Participant_ID"] == player_id]
+# player_id = 1  
+# player_data = data[data["Participant_ID"] == player_id]
 
-print(unique_targets := player_data["Activity_Type"].unique()) # result -> ['set_shot' 'layup' 'jump_shot' 'tip_in']
+# print(unique_targets := player_data["Activity_Type"].unique()) # result -> ['set_shot' 'layup' 'jump_shot' 'tip_in']
 
-movement =  "Jumping" 
+# movement =  "Jumping" 
 
-filtered = data[(data["Participant_ID"] == player_id) & (data["Activity_Type"] == movement)]
-filtered = filtered.sort_values(by="Timestamp")  
+# filtered = data[(data["Participant_ID"] == player_id) & (data["Activity_Type"] == movement)]
+# filtered = filtered.sort_values(by="Timestamp")  
 
-print(f"Liczba próbek dla {player_id}, ruch: {movement} = {len(filtered)}")
+# print(f"Liczba próbek dla {player_id}, ruch: {movement} = {len(filtered)}")
 
-subset = filtered.head(200)
-print(f"Próbki dla {player_id}, ruch: {movement} (pierwsze 200):")
-filtered = subset
-filtered = filtered.sort_values(by="Timestamp")  
+# subset = filtered.head(200)
+# print(f"Próbki dla {player_id}, ruch: {movement} (pierwsze 200):")
+# filtered = subset
+activity_label=0
+filtered = data[data["ActivityLabel"] == activity_label].sort_values(by="Timestamp_us").head(200)
+subset = filtered
+#filtered = filtered.head(200)
+#filtered = filtered.sort_values(by="Timestamp_us")  
 
 fig = plt.figure(figsize=(10, 7))
 ax = fig.add_subplot(111, projection="3d")
@@ -50,7 +54,7 @@ ax.plot(subset["Ax"], subset["Ay"], subset["Az"], label="Trajectory in 3D")
 ax.set_xlabel("Ax")
 ax.set_ylabel("Ay")
 ax.set_zlabel("Az")
-ax.set_title(f"3D Accelerometer trajectory - {player_id}, {movement}")
+ax.set_title(f"3D Accelerometer trajectory -")# {player_id}, {movement}")
 ax.legend()
 
 #accel
@@ -58,7 +62,7 @@ plt.figure(figsize=(12, 6))
 plt.plot(filtered["Ax"], label="Ax")
 plt.plot(filtered["Ay"], label="Ay")
 plt.plot(filtered["Az"], label="Az")
-plt.title(f"Accelerometer signals - {player_id}")
+plt.title(f"Accelerometer signals - ")#{player_id}")
 plt.xlabel("Sample index")
 plt.ylabel("Acceleration")
 plt.legend()
@@ -69,7 +73,7 @@ plt.figure(figsize=(12, 6))
 plt.plot(filtered["Gx"], label="Gx")
 plt.plot(filtered["Gy"], label="Gy")
 plt.plot(filtered["Gz"], label="Gz")
-plt.title(f"Gyroscope signals - {player_id}")
+plt.title(f"Gyroscope signals - ")#{player_id}")
 plt.xlabel("Sample index")
 plt.ylabel("Angular velocity")
 plt.legend()
