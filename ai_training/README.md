@@ -5,3 +5,8 @@
 
 ## Summary
 None is good enought, very strange data
+
+### Let's create our own dataset
+Structure: Timestamp,Activity_ID,Activity_Type,Ax,Ay,Az,Gx,Gy,Gz
+
+We have 3 accel and 2 gyro, so would create 3 minidatsets for each sensor

@@ -2,10 +2,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBo
 from PyQt5.QtCore import Qt
 import serial.tools.list_ports
 import parameters
+from data_gathering import DataGatheringWindow
 from keybinding_dialog import KeyBindingDialog
 from PyQt5.QtWidgets import QDialog
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -69,6 +68,11 @@ class MainWindow(QMainWindow):
         self.button_calibration.setFixedSize(200, 50)
         layout.addWidget(self.button_calibration, alignment=Qt.AlignCenter)
 
+        self.button_hotkey = QPushButton("Zbierz dataset")
+        self.button_hotkey.clicked.connect(self.on_button_data_click)
+        self.button_hotkey.setFixedSize(200, 50)
+        layout.addWidget(self.button_hotkey, alignment=Qt.AlignCenter)
+
         self.button_close = QPushButton("Wyjdź")
         self.button_close.clicked.connect(self.on_button_close_click)
         self.button_close.setFixedSize(200, 50)
@@ -104,6 +108,28 @@ class MainWindow(QMainWindow):
     def on_button_close_click(self):
         self.close()
     
+    def on_button_data_click(self):
+        self.create_data_gathering_window()
+
+
+    def create_data_gathering_window(self):
+        #choose player id, movement type, device id
+        #get data from terminal and save to csv
+        #csv scheme: Participant_ID,Activity_Type,Device_ID,Ax,Ay,Az,Gx,Gy,Gz,Timestamp
+        #or insert what you want to save in csv structure
+        """Open data gathering window"""
+        if not self.serial_reader:
+            self.label.setText("Error: Serial reader not initialized!")
+            return
+            
+        if not self.is_connected:
+            self.label.setText("Error: Please connect to a device first!")
+            return
+        
+        self.data_window = DataGatheringWindow(self, self.serial_reader)
+        self.data_window.show()
+        pass
+    
     def on_button_click(self):
         """Handle button click event"""
         self.label.setText("Button clicked!")
@@ -135,6 +161,8 @@ class MainWindow(QMainWindow):
             status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
             status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}"
             self.label.setText(status_text)
+        if self.data_window and self.data_window.is_recording:
+            self.data_window.record_data(data)
 
     def set_serial_reader(self, serial_reader):
         """Set the serial reader instance"""
