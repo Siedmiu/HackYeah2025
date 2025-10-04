@@ -38,53 +38,53 @@ void setup() {
   pinMode(SW_L, INPUT_PULLUP);
   pinMode(SW_R, INPUT_PULLUP);
 
-  //Initialize I2C
-  Wire.begin(I2C_SDA, I2C_SCL);
-  Wire.setClock(I2C_FREQ);
+  // //Initialize I2C
+  // Wire.begin(I2C_SDA, I2C_SCL);
+  // Wire.setClock(I2C_FREQ);
   
-  //MPU6050 init
-  Serial.print("MPU6050 init");
-  if (!mpu.begin()) {
-    Serial.println("FAILED");
-  } else {
-    Serial.println("OK");
+  // //MPU6050 init
+  // Serial.print("MPU6050 init");
+  // if (!mpu.begin()) {
+  //   Serial.println("FAILED");
+  // } else {
+  //   Serial.println("OK");
     
-    //MPU6050 config
-    mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // Accel range: ±8G
-    mpu.setGyroRange(MPU6050_RANGE_250_DEG); //Gyro range: ±250°/s (360° full range)
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ); //Filter: 21 Hz
-  }
+  //   //MPU6050 config
+  //   mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // Accel range: ±8G
+  //   mpu.setGyroRange(MPU6050_RANGE_250_DEG); //Gyro range: ±250°/s (360° full range)
+  //   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ); //Filter: 21 Hz
+  // }
   
-  //ADXL345 init
-  Serial.print("ADXL345 init");
-  if (!adxl.begin()) {
-    Serial.println("FAILED!");
-  } else {
-    Serial.println("OK");
+  // //ADXL345 init
+  // Serial.print("ADXL345 init");
+  // if (!adxl.begin()) {
+  //   Serial.println("FAILED!");
+  // } else {
+  //   Serial.println("OK");
     
-    //ADXL345 config
-    adxl.setRange(ADXL345_RANGE_8_G); //Range: ±8G
-    adxl.setDataRate(ADXL345_DATARATE_100_HZ); //Data rate: 100 Hz
-  }
+  //   //ADXL345 config
+  //   adxl.setRange(ADXL345_RANGE_8_G); //Range: ±8G
+  //   adxl.setDataRate(ADXL345_DATARATE_100_HZ); //Data rate: 100 Hz
+  // }
   
-  //L3GD20H init (AltIMU-10 Gyro)
-  Serial.print("L3GD20H init");
-  l3gd.enableAutoRange(true);
-  if (!l3gd.begin()) {
-    Serial.println("FAILED!");
-  } else {
-    Serial.println("OK");
-  }
+  // //L3GD20H init (AltIMU-10 Gyro)
+  // Serial.print("L3GD20H init");
+  // l3gd.enableAutoRange(true);
+  // if (!l3gd.begin()) {
+  //   Serial.println("FAILED!");
+  // } else {
+  //   Serial.println("OK");
+  // }
   
-  //LSM303 init (AltIMU-10 Accel)
-  Serial.print("LSM303 init");
-  lsm303.init();
-  if (!lsm303.init(LSM303::device_D)) {
-    Serial.println("FAILED!");
-  } else {
-    Serial.println("OK");
-    lsm303.enableDefault();
-  }
+  // //LSM303 init (AltIMU-10 Accel)
+  // Serial.print("LSM303 init");
+  // lsm303.init();
+  // if (!lsm303.init(LSM303::device_D)) {
+  //   Serial.println("FAILED!");
+  // } else {
+  //   Serial.println("OK");
+  //   lsm303.enableDefault();
+  // }
   
   Serial.println("\n=== Setup Complete ===\n");
   //CSV header
@@ -94,38 +94,38 @@ void setup() {
 // ========== MAIN LOOP ==========
 void sendCSVData() {
   // Read MPU6050
-  sensors_event_t a1, g1, temp;
-  mpu.getEvent(&a1, &g1, &temp);
+  // sensors_event_t a1, g1, temp;
+  // mpu.getEvent(&a1, &g1, &temp);
 
-  // Read ADXL345
-  sensors_event_t a2;
-  adxl.getEvent(&a2);
+  // // Read ADXL345
+  // sensors_event_t a2;
+  // adxl.getEvent(&a2);
 
-  // Read L3GD20H (AltIMU-10 Gyro)
-  sensors_event_t g2;
-  l3gd.getEvent(&g2);
+  // // Read L3GD20H (AltIMU-10 Gyro)
+  // sensors_event_t g2;
+  // l3gd.getEvent(&g2);
 
-  // Read LSM303 (AltIMU-10 Accel)
-  lsm303.read();
+  // // Read LSM303 (AltIMU-10 Accel)
+  // lsm303.read();
 
   // Read Joysticks
   int xValueL = analogRead(VRx_L);
   int yValueL = analogRead(VRy_L);
-  int xValueR = analogRead(VRx_R);
-  int yValueR = analogRead(VRy_R);
+  // int xValueR = analogRead(VRx_R);
+  // int yValueR = analogRead(VRy_R);
   int buttonStateL = digitalRead(SW_L);
-  int buttonStateR = digitalRead(SW_R);
+  // int buttonStateR = digitalRead(SW_R);
 
   //CSV format: timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb
-  Serial.printf("%lu,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  Serial.printf("%lu,%d,%d,%d\n",
     millis(),
-    a1.acceleration.x, a1.acceleration.y, a1.acceleration.z,
-    g1.gyro.x, g1.gyro.y, g1.gyro.z,
-    a2.acceleration.x, a2.acceleration.y, a2.acceleration.z,
-    g2.gyro.x, g2.gyro.y, g2.gyro.z,
-    lsm303.a.x, lsm303.a.y, lsm303.a.z,
-    xValueL, yValueL, buttonStateL,
-    xValueR, yValueR, buttonStateR
+    // a1.acceleration.x, a1.acceleration.y, a1.acceleration.z,
+    // g1.gyro.x, g1.gyro.y, g1.gyro.z,
+    // a2.acceleration.x, a2.acceleration.y, a2.acceleration.z,
+    // g2.gyro.x, g2.gyro.y, g2.gyro.z,
+    // lsm303.a.x, lsm303.a.y, lsm303.a.z,
+    xValueL, yValueL, buttonStateL
+    // xValueR, yValueR, buttonStateR
   );
 }
 
