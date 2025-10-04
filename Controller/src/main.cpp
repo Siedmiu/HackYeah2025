@@ -26,7 +26,14 @@ Adafruit_LSM303_Accel_Unified lsm303_accel = Adafruit_LSM303_Accel_Unified(54321
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
-  
+
+  pinMode(VRx_L, INPUT);
+  pinMode(VRy_L, INPUT);
+  pinMode(VRx_R, INPUT);
+  pinMode(VRy_R, INPUT);
+  pinMode(SW_L, INPUT_PULLUP);
+  pinMode(SW_R, INPUT_PULLUP);
+
   //Initialize I2C
   Wire.begin(I2C_SDA, I2C_SCL);
   Wire.setClock(I2C_FREQ);
@@ -79,7 +86,7 @@ void setup() {
 }
 
 // ========== MAIN LOOP ==========
-void loop() {
+void readSensors() {
   Serial.println("========== Sensor Reading ==========");
   
   // Read MPU6050
@@ -120,7 +127,28 @@ void loop() {
                 a3.acceleration.x, a3.acceleration.y, a3.acceleration.z);
   
   Serial.println("\n====================================\n");
-  delay(1000);
+}
+
+void readJoystick() {
+  int xValueL = analogRead(VRx_L);
+  int yValueL = analogRead(VRy_L);
+  int xValueR = analogRead(VRx_R);
+  int yValueR = analogRead(VRy_R);
+  int buttonStateL = digitalRead(SW_L);
+  int buttonStateR = digitalRead(SW_R);
+
+  Serial.println("========== Joystick Reading ==========");
+  Serial.printf("Left Joystick:  X=%d Y=%d Button=%s\n", 
+                xValueL, yValueL, buttonStateL == LOW ? "Pressed" : "Released");
+  Serial.printf("Right Joystick: X=%d Y=%d Button=%s\n", 
+                xValueR, yValueR, buttonStateR == LOW ? "Pressed" : "Released");
+  Serial.println("=====================================\n");
+}
+
+void loop() {
+  readSensors();
+  readJoystick();
+  delay(200);
 }
 
 //gyro rad/s to deg/s
