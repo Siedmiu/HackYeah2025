@@ -2,7 +2,7 @@
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtCore import Qt
-
+import parameters
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -55,9 +55,15 @@ class MainWindow(QMainWindow):
         # Add stretch to push content to center
         layout.addStretch()
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.esc_press()
+        super().keyPressEvent(event)
+
     # Funkcje obsługi przycisków (dodaj do klasy MainWindow):
     def on_button_start_click(self):
-        self.label.setText("Button 1 clicked!")
+        self.label.setText("Game mode activated\nPress [ESC] to cancel")
+        parameters.game_state = "Game"
 
     def on_button_hotkey_click(self):
         self.label.setText("Button 2 clicked!")
@@ -84,12 +90,7 @@ class MainWindow(QMainWindow):
         """Display data in GUI"""
         pass
 
-    def update_sensor_data(self, data):
-        """Update GUI with sensor data from Arduino"""
-        status_text = f"IMU Data:\n"
-        status_text += f"MPU Accel: ({data['mpu_ax']:.2f}, {data['mpu_ay']:.2f}, {data['mpu_az']:.2f}) m/s²\n"
-        status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
-        status_text += f"Temp: {data['mpu_temp']:.1f}°C\n\n"
-        status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
-        status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}"
-        self.label.setText(status_text)
+    def esc_press(self):
+         if parameters.game_state == "Game":
+             parameters.game_state = "Main_menu"
+             self.label.setText("Ready")
