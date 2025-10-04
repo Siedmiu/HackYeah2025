@@ -163,10 +163,15 @@ class DataGatheringWindow(QDialog):
             self.csv_file = open(self.file_path_input.text(), 'w', newline='')
             self.csv_writer = csv.writer(self.csv_file)
             
-            # Write header
+            # Write header matching Arduino output plus metadata
             self.csv_writer.writerow([
-                'Participant_ID', 'Activity_Type', 'Device_ID',
-                'Ax', 'Ay', 'Az', 'Gx', 'Gy', 'Gz', 'Timestamp'
+                'Participant_ID', 'Activity_Type', 'Device_ID', 'Timestamp',
+                'mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz',
+                'adxl_ax', 'adxl_ay', 'adxl_az',
+                'l3gd_gx', 'l3gd_gy', 'l3gd_gz',
+                'lsm_ax', 'lsm_ay', 'lsm_az',
+                'joy_lx', 'joy_ly', 'joy_lb', 'joy_rx', 'joy_ry', 'joy_rb',
+                'mpu_temp'
             ])
             
             self.is_recording = True
@@ -219,20 +224,44 @@ class DataGatheringWindow(QDialog):
                 
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
             
+            # Build row with all sensor data
             row = [
-                self.participant_input.value(),
-                activity,
-                self.device_input.text().strip(),
+                self.participant_input.value(),  # Participant_ID
+                activity,                         # Activity_Type
+                self.device_input.text().strip(), # Device_ID
+                timestamp,                        # Timestamp
+                # MPU6050 data
                 sensor_data.get('mpu_ax', 0),
                 sensor_data.get('mpu_ay', 0),
                 sensor_data.get('mpu_az', 0),
                 sensor_data.get('mpu_gx', 0),
                 sensor_data.get('mpu_gy', 0),
                 sensor_data.get('mpu_gz', 0),
-                timestamp
+                # ADXL345 data
+                sensor_data.get('adxl_ax', 0),
+                sensor_data.get('adxl_ay', 0),
+                sensor_data.get('adxl_az', 0),
+                # L3GD20 data
+                sensor_data.get('l3gd_gx', 0),
+                sensor_data.get('l3gd_gy', 0),
+                sensor_data.get('l3gd_gz', 0),
+                # LSM303 data
+                sensor_data.get('lsm_ax', 0),
+                sensor_data.get('lsm_ay', 0),
+                sensor_data.get('lsm_az', 0),
+                # Joystick data
+                sensor_data.get('joy_lx', 0),
+                sensor_data.get('joy_ly', 0),
+                sensor_data.get('joy_lb', 0),
+                sensor_data.get('joy_rx', 0),
+                sensor_data.get('joy_ry', 0),
+                sensor_data.get('joy_rb', 0),
+                # Temperature
+                sensor_data.get('mpu_temp', 0)
             ]
             
             self.csv_writer.writerow(row)
+            self.csv_file.flush()  # Ensure data is written immediately
             self.sample_count += 1
             self.sample_label.setText(f"Samples collected: {self.sample_count}")
             
