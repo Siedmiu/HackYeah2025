@@ -8,7 +8,13 @@
 //========== PIN DEFINITIONS ==========
 #define I2C_SDA 21
 #define I2C_SCL 22
-#define I2C_FREQ 400000  // 400kHz
+#define VRx_L 32
+#define VRy_L 33
+#define VRx_R 34
+#define VRy_R 35
+#define SW_L 36
+#define SW_R 37
+#define I2C_FREQ 100000  //100kHz
 
 //========== UNIFIED SENSOR OBJECTS ==========
 Adafruit_MPU6050 mpu;
