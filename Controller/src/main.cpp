@@ -12,8 +12,8 @@
 #define VRy_L 33
 #define VRx_R 34
 #define VRy_R 35
-#define SW_L 36
-#define SW_R 37
+#define SW_L 12
+#define SW_R 14
 #define I2C_FREQ 100000  //100kHz
 
 //========== UNIFIED SENSOR OBJECTS ==========
@@ -116,7 +116,7 @@ void sendCSVData() {
   int buttonStateL = digitalRead(SW_L);
   int buttonStateR = digitalRead(SW_R);
 
-  //CSV format: timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,mpu_temp,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb
+  //CSV format: timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb
   Serial.printf("%lu,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
     millis(),
     a1.acceleration.x, a1.acceleration.y, a1.acceleration.z,
