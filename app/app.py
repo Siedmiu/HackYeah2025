@@ -1,4 +1,5 @@
 import sys
+import signal
 import serial
 import serial.tools.list_ports
 import csv
@@ -38,10 +39,10 @@ class SerialReader(QThread):
 
             # Reset Arduino to get fresh header (DTR pulse)
             print("Resetting Arduino...")
-            self.serial_conn.setDTR(False)
+            self.serial_conn.setDTR(False)  # type: ignore[attr-defined]
             import time
             time.sleep(0.1)
-            self.serial_conn.setDTR(True)
+            self.serial_conn.setDTR(True)  # type: ignore[attr-defined]
             time.sleep(2)  # Wait for Arduino to boot
 
             self.connection_status.emit(True, f"Connected to {self.port}")
@@ -135,7 +136,8 @@ class SerialReader(QThread):
 
     def stop(self):
         self.running = False
-        self.wait()
+        if self.isRunning():
+            self.wait()
 
 def find_arduino_port():
     """Automatically find Arduino port"""
@@ -174,6 +176,19 @@ def main():
     # Pass the serial reader to the window so it can reconnect
     window.set_serial_reader(serial_reader)
 
+    # Handle Ctrl+C gracefully
+    def handle_sigint(sig, frame):
+        print("\nCtrl+C detected, shutting down...")
+        serial_reader.running = False
+        app.quit()
+
+    signal.signal(signal.SIGINT, handle_sigint)
+
+    def on_about_to_quit():
+        serial_reader.running = False
+
+    app.aboutToQuit.connect(on_about_to_quit)
+
     # Start connection if port was found
     if port:
         print(f"Connecting to Arduino on {port}...")
@@ -182,9 +197,14 @@ def main():
     window.show()
 
     # Cleanup
-    result = app.exec_()
-    serial_reader.stop()
-    sys.exit(result)
+    result = 0
+    try:
+        result = app.exec_()
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received, exiting...")
+    finally:
+        serial_reader.stop()
+        sys.exit(result)
 
 if __name__ == "__main__":
     main()
