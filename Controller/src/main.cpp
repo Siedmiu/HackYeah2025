@@ -22,6 +22,10 @@ Adafruit_ADXL345_Unified adxl = Adafruit_ADXL345_Unified(12345);
 Adafruit_L3GD20_Unified l3gd = Adafruit_L3GD20_Unified(20);
 Adafruit_LSM303_Accel_Unified lsm303_accel = Adafruit_LSM303_Accel_Unified(54321);
 
+//==============FUNCTIONS DEF================
+float radToDeg(float rad);
+float accelMagnitude(sensors_event_t &accel);
+
 //=========================================
 void setup() {
   Serial.begin(115200);
@@ -83,53 +87,29 @@ void setup() {
   }
   
   Serial.println("\n=== Setup Complete ===\n");
+  //CSV header
+  Serial.println("timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb");
 }
 
 // ========== MAIN LOOP ==========
-void readSensors() {
-  Serial.println("========== Sensor Reading ==========");
-  
+void sendCSVData() {
   // Read MPU6050
   sensors_event_t a1, g1, temp;
   mpu.getEvent(&a1, &g1, &temp);
-  
-  Serial.println("\n[MPU6050]");
-  Serial.printf("  Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", 
-                a1.acceleration.x, a1.acceleration.y, a1.acceleration.z);
-  Serial.printf("  Gyro:  X=%.2f Y=%.2f Z=%.2f rad/s (%.1f %.1f %.1f °/s)\n", 
-                g1.gyro.x, g1.gyro.y, g1.gyro.z,
-                radToDeg(g1.gyro.x), radToDeg(g1.gyro.y), radToDeg(g1.gyro.z));
-  Serial.printf("  Temp:  %.2f °C\n", temp.temperature);
-  
+
   // Read ADXL345
   sensors_event_t a2;
   adxl.getEvent(&a2);
-  
-  Serial.println("\n[ADXL345]");
-  Serial.printf("  Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", 
-                a2.acceleration.x, a2.acceleration.y, a2.acceleration.z);
-  
+
   // Read L3GD20H (AltIMU-10 Gyro)
   sensors_event_t g2;
   l3gd.getEvent(&g2);
-  
-  Serial.println("\n[L3GD20H - AltIMU-10 Gyro]");
-  Serial.printf("  Gyro:  X=%.2f Y=%.2f Z=%.2f rad/s (%.1f %.1f %.1f °/s)\n", 
-                g2.gyro.x, g2.gyro.y, g2.gyro.z,
-                radToDeg(g2.gyro.x), radToDeg(g2.gyro.y), radToDeg(g2.gyro.z));
-  
+
   // Read LSM303D (AltIMU-10 Accel)
   sensors_event_t a3;
   lsm303_accel.getEvent(&a3);
-  
-  Serial.println("\n[LSM303D - AltIMU-10 Accel]");
-  Serial.printf("  Accel: X=%.2f Y=%.2f Z=%.2f m/s²\n", 
-                a3.acceleration.x, a3.acceleration.y, a3.acceleration.z);
-  
-  Serial.println("\n====================================\n");
-}
 
-void readJoystick() {
+  // Read Joysticks
   int xValueL = analogRead(VRx_L);
   int yValueL = analogRead(VRy_L);
   int xValueR = analogRead(VRx_R);
@@ -137,18 +117,22 @@ void readJoystick() {
   int buttonStateL = digitalRead(SW_L);
   int buttonStateR = digitalRead(SW_R);
 
-  Serial.println("========== Joystick Reading ==========");
-  Serial.printf("Left Joystick:  X=%d Y=%d Button=%s\n", 
-                xValueL, yValueL, buttonStateL == LOW ? "Pressed" : "Released");
-  Serial.printf("Right Joystick: X=%d Y=%d Button=%s\n", 
-                xValueR, yValueR, buttonStateR == LOW ? "Pressed" : "Released");
-  Serial.println("=====================================\n");
+  //CSV format: timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,mpu_temp,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb
+  Serial.printf("%lu,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%d,%d\n",
+    millis(),
+    a1.acceleration.x, a1.acceleration.y, a1.acceleration.z,
+    g1.gyro.x, g1.gyro.y, g1.gyro.z,
+    a2.acceleration.x, a2.acceleration.y, a2.acceleration.z,
+    g2.gyro.x, g2.gyro.y, g2.gyro.z,
+    a3.acceleration.x, a3.acceleration.y, a3.acceleration.z,
+    xValueL, yValueL, buttonStateL,
+    xValueR, yValueR, buttonStateR
+  );
 }
 
 void loop() {
-  readSensors();
-  readJoystick();
-  delay(200);
+  sendCSVData();
+  delay(100);  // 10Hz sampling rate
 }
 
 //gyro rad/s to deg/s

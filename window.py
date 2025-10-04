@@ -83,3 +83,13 @@ class MainWindow(QMainWindow):
     def display_data(self, data):
         """Display data in GUI"""
         pass
+
+    def update_sensor_data(self, data):
+        """Update GUI with sensor data from Arduino"""
+        status_text = f"IMU Data:\n"
+        status_text += f"MPU Accel: ({data['mpu_ax']:.2f}, {data['mpu_ay']:.2f}, {data['mpu_az']:.2f}) m/s²\n"
+        status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
+        status_text += f"Temp: {data['mpu_temp']:.1f}°C\n\n"
+        status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
+        status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}"
+        self.label.setText(status_text)
