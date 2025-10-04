@@ -1,2 +1,13 @@
 pandas
 matplotlib
+tensorflow
+scikit-learn
+numpy
+scipy
+
+
+keyboard
+pyautogui
+
+pyserial
+pyqt5
