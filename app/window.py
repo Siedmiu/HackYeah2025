@@ -1,15 +1,20 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QComboBox, QLineEdit
 from PyQt5.QtCore import Qt
 import serial.tools.list_ports
 import parameters
 from data_gathering import DataGatheringWindow
 from keybinding_dialog import KeyBindingDialog
 from PyQt5.QtWidgets import QDialog
+from joystick import Joystick
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.serial_reader = None
         self.is_connected = False
+        self.data_window = None  # Inicjalizacja okna data gathering
+        self.joystick_controller = Joystick()
         self.init_ui()
     
     def init_ui(self):
@@ -45,6 +50,13 @@ class MainWindow(QMainWindow):
         self.button_connect.clicked.connect(self.on_button_connect_click)
         self.button_connect.setFixedSize(200, 50)
         layout.addWidget(self.button_connect, alignment=Qt.AlignCenter)
+
+        # Pole tekstowe (nic nie robi)
+        self.text_field = QLineEdit()
+        self.text_field.setPlaceholderText("Wpisz coś tutaj...")
+        self.text_field.setFixedSize(200, 35)
+        self.text_field.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.text_field, alignment=Qt.AlignCenter)
 
         # Large label
         self.label = QLabel("Status: Ready")
@@ -153,7 +165,19 @@ class MainWindow(QMainWindow):
 
     def update_sensor_data(self, data):
         """Update GUI with sensor data from Arduino"""
+        
+        # NAJPIERW zapisz dane joysticka do parameters (przed update())
+        parameters.joystick_left_x = data['joy_lx']
+        parameters.joystick_left_y = data['joy_ly']
+        parameters.joystick_left_button = data['joy_lb']
+        parameters.joystick_right_x = data['joy_rx'] 
+        parameters.joystick_right_y = data['joy_ry']
+        parameters.joystick_right_button = data['joy_rb']
+        
+        # Jeśli jesteś w trybie Game, wywołaj joystick controller
         if parameters.game_state == "Game":
+            self.joystick_controller.update()
+            
             status_text = f"IMU Data:\n"
             status_text += f"MPU Accel: ({data['mpu_ax']:.2f}, {data['mpu_ay']:.2f}, {data['mpu_az']:.2f}) m/s²\n"
             status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
@@ -161,12 +185,10 @@ class MainWindow(QMainWindow):
             status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
             status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}"
             self.label.setText(status_text)
+        
+        # Zapisuj do CSV tylko gdy jest okno data gathering i jest nagrywanie
         if self.data_window and self.data_window.is_recording:
             self.data_window.record_data(data)
-
-    def set_serial_reader(self, serial_reader):
-        """Set the serial reader instance"""
-        self.serial_reader = serial_reader
 
     def set_serial_reader(self, serial_reader):
         """Set the serial reader instance"""
