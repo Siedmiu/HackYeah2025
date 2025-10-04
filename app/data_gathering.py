@@ -71,18 +71,34 @@ class DataGatheringWindow(QDialog):
         self.activity_combo.currentTextChanged.connect(self.on_activity_changed)
         
         # File path selection
+        # file_layout = QHBoxLayout()
+        # file_layout.addWidget(QLabel("Save to:"))
+        # self.file_path_input = QLineEdit()
+        # self.file_path_input.setPlaceholderText("Wybierz lokalizację pliku...")
+        # self.file_path_input.setReadOnly(True)
+        # file_layout.addWidget(self.file_path_input)
+        
+        # self.browse_button = QPushButton("Browse")
+        # self.browse_button.clicked.connect(self.browse_file)
+        # file_layout.addWidget(self.browse_button)
+        # layout.addLayout(file_layout)
+        
+        file_path = f"dataset/data_{self.participant_input}_{self.device_input}_{self.custom_activity_input}.csv"
+
+        # Display it in the QLineEdit (read-only)
+        self.file_path_input = QLineEdit()
+        self.file_path_input.setText(file_path)
+        self.file_path_input.setReadOnly(True)
+
+        # Add it to layout
         file_layout = QHBoxLayout()
         file_layout.addWidget(QLabel("Save to:"))
-        self.file_path_input = QLineEdit()
-        self.file_path_input.setPlaceholderText("Wybierz lokalizację pliku...")
-        self.file_path_input.setReadOnly(True)
         file_layout.addWidget(self.file_path_input)
-        
-        self.browse_button = QPushButton("Browse")
-        self.browse_button.clicked.connect(self.browse_file)
-        file_layout.addWidget(self.browse_button)
+
+        # No need for Browse button
+        # layout.addLayout(file_layout)
         layout.addLayout(file_layout)
-        
+
         # Sample count display
         self.sample_label = QLabel("Samples collected: 0")
         self.sample_label.setStyleSheet("font-size: 14px; padding: 10px;")
@@ -164,6 +180,7 @@ class DataGatheringWindow(QDialog):
             self.csv_writer = csv.writer(self.csv_file)
             
             # Write header matching Arduino output plus metadata
+            # device_id do usunięcia!!!
             self.csv_writer.writerow([
                 'Participant_ID', 'Activity_Type', 'Device_ID', 'Timestamp',
                 'mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz',
