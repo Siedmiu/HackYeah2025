@@ -2,11 +2,5 @@
     "joy_left": "character_move_wsad",
     "joy_right": "character_move_arrows",
     "joy_lb": "G",
-    "joy_rb": "H",
-    "Jumping": "space",
-    "Udarzenia": "left_mouse",
-    "Udarzenia_lewa": "right_mouse",
-    "Kucania": "shift_toggle",
-    "Strzal": "right_mouse_hold_5s",
-    "Syf": "right_mouse_hold_5s"
+    "joy_rb": "H"
 }
