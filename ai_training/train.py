@@ -13,33 +13,33 @@ from sklearn.metrics import confusion_matrix, classification_report
 import seaborn as sns
 
 # ==================== CONFIGURATION ====================
-WINDOW_SIZE = 50  # Number of samples per window
-WINDOW_STEP = 25  # Overlap between windows
-AUGMENTATION_FACTOR = 3  # How many augmented samples per original
+WINDOW_SIZE = 35  # Number of samples per window
+WINDOW_STEP = 25  # Overlap between windows (50% overlap)
+AUGMENTATION_FACTOR = 20  # Augmented versions per original window
 
 # Gesture to sensor mapping
 GESTURE_SENSORS = {
-    'Jumping': ['adxl_ax', 'adxl_ay', 'adxl_az'],  # ADXL345 accelerometer only
-    'Kucania': ['mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz'],  # MPU6050 accel + gyro
-    'Udarzenia': ['l3gd_gx', 'l3gd_gy', 'l3gd_gz', 'lsm_ax', 'lsm_ay', 'lsm_az'],  # L3GD20 gyro + LSM303 accel
-    'Udarzenia_lewa': ['mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz'],  # MPU6050 accel + gyro
-    'Strzal': ['adxl_ax', 'adxl_ay', 'adxl_az', 'lsm_ax', 'lsm_ay', 'lsm_az'],  # ADXL345 + LSM303 accelerometers
-    'Syf': ['mpu_ax', 'mpu_ay', 'mpu_az', 'adxl_ax', 'adxl_ay', 'adxl_az']  # MPU + ADXL accelerometers
+    'Jumping': ['adxl_ax', 'adxl_ay', 'adxl_az'],
+    # 'Kucania': ['mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz'],
+    'Udarzenia': ['l3gd_gx', 'l3gd_gy', 'l3gd_gz', 'lsm_ax', 'lsm_ay', 'lsm_az'],
+    # 'Udarzenia_lewa': ['mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz'],
+    # 'Strzal': ['adxl_ax', 'adxl_ay', 'adxl_az', 'lsm_ax', 'lsm_ay', 'lsm_az'],
+    'Syf': ['mpu_ax', 'mpu_ay', 'mpu_az', 'adxl_ax', 'adxl_ay', 'adxl_az']
 }
 
 # ==================== DATA AUGMENTATION ====================
 def add_noise(data, noise_level=0.05):
-    """Add Gaussian noise to data"""
+    """Add Gaussian noise"""
     noise = np.random.normal(0, noise_level, data.shape)
     return data + noise * np.std(data, axis=0)
 
 def scale_data(data, scale_range=(0.9, 1.1)):
-    """Random scaling augmentation"""
+    """Random scaling"""
     scale = np.random.uniform(scale_range[0], scale_range[1])
     return data * scale
 
 def time_warp(data, sigma=0.2):
-    """Time warping augmentation"""
+    """Time warping"""
     num_samples = data.shape[0]
     warp = np.random.normal(1.0, sigma, num_samples)
     warp = np.cumsum(warp)
@@ -47,140 +47,112 @@ def time_warp(data, sigma=0.2):
     indices = np.clip(warp, 0, num_samples - 1).astype(int)
     return data[indices]
 
-def augment_window(window, num_augmentations=3):
-    """Apply multiple augmentation techniques"""
-    augmented = [window]  # Original window
+def augment_window(window, num_augmentations=5):
+    """Apply augmentations to create variations"""
+    augmented = []
     
     for _ in range(num_augmentations):
         aug = window.copy()
         
-        # Randomly apply augmentations
-        if np.random.random() > 0.5:
-            aug = add_noise(aug, noise_level=np.random.uniform(0.02, 0.08))
-        if np.random.random() > 0.5:
-            aug = scale_data(aug, scale_range=(0.85, 1.15))
-        if np.random.random() > 0.5:
-            aug = time_warp(aug, sigma=np.random.uniform(0.1, 0.3))
-            
+        # Apply noise
+        aug = add_noise(aug, noise_level=np.random.uniform(0.03, 0.12))
+        
+        # Apply scaling
+        aug = scale_data(aug, scale_range=(0.8, 1.2))
+        
+        # Apply time warping (70% chance)
+        if np.random.random() > 0.3:
+            aug = time_warp(aug, sigma=np.random.uniform(0.15, 0.35))
+        
+        # Small rotation for 3-axis data
+        if np.random.random() > 0.5 and aug.shape[1] >= 3:
+            angle = np.random.uniform(-15, 15) * np.pi / 180
+            cos_a, sin_a = np.cos(angle), np.sin(angle)
+            for i in range(0, min(aug.shape[1] - 1, 2)):
+                temp = aug[:, i].copy()
+                aug[:, i] = cos_a * temp - sin_a * aug[:, i+1]
+                aug[:, i+1] = sin_a * temp + cos_a * aug[:, i+1]
+        
         augmented.append(aug)
     
     return augmented
 
 # ==================== DATA LOADING ====================
-def load_gesture_data(data_dir='./dataset'):
-    """Load all gesture CSV files"""
-    all_data = []
-    gesture_files = {
-        'Jumping': 'data_*_Jumping_*.csv',
-        'Kucania': 'data_*_Kucania_*.csv',
-        'Udarzania': 'data_*_Udarzania_*.csv',
-        'Udarzania_lewo': 'data_*_Udarzanie_lewo_*.csv',
-        'Strzal': 'data_*_Strzal_*.csv',
-        'Syf': 'data_*_Syf_*.csv'
-    }
+def load_merged_data(data_dir='dataset/merged'):
+    """Load merged CSV files"""
+    all_windows = []
+    all_labels = []
+    max_features = 0  # Track maximum number of features
     
-    for gesture, pattern in gesture_files.items():
-        files = glob.glob(os.path.join(data_dir, pattern))
-        print(f"Loading {gesture}: found {len(files)} files")
+    csv_files = glob.glob(os.path.join(data_dir, '*_merged.csv'))
+    
+    if not csv_files:
+        raise ValueError(f"No merged CSV files found in {data_dir}")
+    
+    print(f"Found {len(csv_files)} merged files\n")
+    
+    # First pass: determine max feature count
+    temp_windows = []
+    temp_labels = []
+    
+    for csv_file in sorted(csv_files):
+        df = pd.read_csv(csv_file)
         
-        for file in files:
-            df = pd.read_csv(file)
-            df['gesture'] = gesture
-            df['file'] = os.path.basename(file)
-            all_data.append(df)
-    
-    if not all_data:
-        raise ValueError(f"No data files found in {data_dir}")
-    
-    combined_df = pd.concat(all_data, ignore_index=True)
-    print(f"\nTotal samples loaded: {len(combined_df)}")
-    print(f"Gestures distribution:\n{combined_df['gesture'].value_counts()}")
-    
-    return combined_df
-
-# ==================== SLIDING WINDOW EXTRACTION ====================
-def create_sliding_windows(df, window_size=50, step_size=25):
-    """Create sliding windows from time series data"""
-    windows = []
-    labels = []
-    
-    # Group by file to maintain temporal continuity
-    for file in df['file'].unique():
-        file_data = df[df['file'] == file].sort_values('Timestamp')
-        gesture = file_data['gesture'].iloc[0]
+        if 'Activity_Type' not in df.columns or len(df) == 0:
+            continue
         
-        # Get relevant sensors for this gesture
-        sensor_cols = GESTURE_SENSORS.get(gesture, GESTURE_SENSORS['syf'])
+        gesture = df['Activity_Type'].iloc[0]
+        sensor_cols = GESTURE_SENSORS.get(gesture)
         
-        # Extract sensor data
-        sensor_data = file_data[sensor_cols].values
+        if not sensor_cols:
+            continue
         
-        # Create windows
-        for i in range(0, len(sensor_data) - window_size + 1, step_size):
-            window = sensor_data[i:i + window_size]
-            
-            if window.shape[0] == window_size:  # Ensure full window
-                windows.append(window)
-                labels.append(gesture)
-    
-    return np.array(windows), np.array(labels)
-
-# ==================== FEATURE EXTRACTION ====================
-def extract_features(windows):
-    """Extract statistical features from windows"""
-    features = []
-    
-    for window in windows:
-        # Calculate statistical features for each sensor axis
-        mean = np.mean(window, axis=0)
-        std = np.std(window, axis=0)
-        min_val = np.min(window, axis=0)
-        max_val = np.max(window, axis=0)
-        median = np.median(window, axis=0)
+        available_sensors = [col for col in sensor_cols if col in df.columns]
+        if not available_sensors:
+            continue
         
-        # Combine features
-        window_features = np.concatenate([mean, std, min_val, max_val, median])
-        features.append(window_features)
+        max_features = max(max_features, len(available_sensors))
+        
+        if 'Timestamp' in df.columns:
+            df = df.sort_values('Timestamp')
+        
+        sensor_data = df[available_sensors].values
+        
+        num_windows = 0
+        for i in range(0, len(sensor_data) - WINDOW_SIZE + 1, WINDOW_STEP):
+            window = sensor_data[i:i + WINDOW_SIZE]
+            if window.shape[0] == WINDOW_SIZE:
+                temp_windows.append(window)
+                temp_labels.append(gesture)
+                num_windows += 1
+        
+        print(f"{os.path.basename(csv_file):<50} {len(df):>4} rows → {num_windows:>3} windows ({gesture})")
     
-    return np.array(features)
+    # Second pass: pad all windows to max_features
+    print(f"\nPadding all windows to {max_features} features...")
+    for window in temp_windows:
+        if window.shape[1] < max_features:
+            # Pad with zeros
+            padding = np.zeros((WINDOW_SIZE, max_features - window.shape[1]))
+            padded_window = np.concatenate([window, padding], axis=1)
+            all_windows.append(padded_window)
+        else:
+            all_windows.append(window)
+    
+    all_labels = temp_labels
+    
+    if not all_windows:
+        raise ValueError("No windows created! Check your data files.")
+    
+    return np.array(all_windows), np.array(all_labels)
 
 # ==================== MODEL ARCHITECTURE ====================
-def create_lstm_model(input_shape, num_classes):
-    """Create LSTM-based model for time series classification"""
-    model = keras.Sequential([
-        layers.Input(shape=input_shape),
-        
-        # First LSTM layer
-        layers.LSTM(128, return_sequences=True),
-        layers.Dropout(0.3),
-        layers.BatchNormalization(),
-        
-        # Second LSTM layer
-        layers.LSTM(64, return_sequences=True),
-        layers.Dropout(0.3),
-        layers.BatchNormalization(),
-        
-        # Third LSTM layer
-        layers.LSTM(32),
-        layers.Dropout(0.3),
-        
-        # Dense layers
-        layers.Dense(64, activation='relu'),
-        layers.Dropout(0.2),
-        layers.Dense(32, activation='relu'),
-        
-        # Output layer
-        layers.Dense(num_classes, activation='softmax')
-    ])
-    
-    return model
-
 def create_cnn_lstm_model(input_shape, num_classes):
-    """Create hybrid CNN-LSTM model"""
+    """CNN-LSTM hybrid model"""
     model = keras.Sequential([
         layers.Input(shape=input_shape),
         
-        # CNN layers for feature extraction
+        # CNN feature extraction
         layers.Conv1D(64, kernel_size=5, activation='relu', padding='same'),
         layers.MaxPooling1D(pool_size=2),
         layers.Dropout(0.3),
@@ -189,7 +161,7 @@ def create_cnn_lstm_model(input_shape, num_classes):
         layers.MaxPooling1D(pool_size=2),
         layers.Dropout(0.3),
         
-        # LSTM layers for temporal patterns
+        # LSTM temporal patterns
         layers.LSTM(64, return_sequences=True),
         layers.Dropout(0.3),
         
@@ -206,65 +178,87 @@ def create_cnn_lstm_model(input_shape, num_classes):
     
     return model
 
-# ==================== MAIN TRAINING PIPELINE ====================
+# ==================== MAIN PIPELINE ====================
 def main():
-    print("=" * 60)
-    print("GESTURE RECOGNITION NEURAL NETWORK TRAINING")
-    print("=" * 60)
+    print("=" * 70)
+    print("GESTURE RECOGNITION - MERGED FILES TRAINING")
+    print("=" * 70)
     
-    # 1. Load data
-    print("\n[1/6] Loading data...")
-    df = load_gesture_data('dataset')
+    # 1. Load data and create windows
+    print("\n[1/7] Loading merged files and creating windows...")
+    windows, labels = load_merged_data('dataset/merged')
     
-    # 2. Create sliding windows
-    print("\n[2/6] Creating sliding windows...")
-    windows, labels = create_sliding_windows(df, WINDOW_SIZE, WINDOW_STEP)
-    print(f"Created {len(windows)} windows")
+    print(f"\nTotal windows created: {len(windows)}")
+    print(f"Window shape: {windows[0].shape}")
+    print(f"\nGesture distribution:")
+    unique, counts = np.unique(labels, return_counts=True)
+    for gesture, count in zip(unique, counts):
+        print(f"  {gesture:<20} {count:>4} windows")
     
-    # 3. Data augmentation
-    print("\n[3/6] Applying data augmentation...")
+    # 2. Shuffle data
+    print("\n[2/7] Shuffling windows...")
+    shuffle_idx = np.random.permutation(len(windows))
+    windows = windows[shuffle_idx]
+    labels = labels[shuffle_idx]
+    
+    # 3. Split BEFORE augmentation
+    print("\n[3/7] Splitting into train/test sets...")
+    from sklearn.model_selection import StratifiedShuffleSplit
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    
+    for train_idx, test_idx in sss.split(windows, labels):
+        windows_train, windows_test = windows[train_idx], windows[test_idx]
+        labels_train, labels_test = labels[train_idx], labels[test_idx]
+    
+    print(f"Train set: {len(windows_train)} windows")
+    print(f"Test set: {len(windows_test)} windows")
+    
+    # 4. Augment training data only
+    print("\n[4/7] Augmenting training data...")
     augmented_windows = []
     augmented_labels = []
     
-    for window, label in zip(windows, labels):
+    for window, label in zip(windows_train, labels_train):
+        # Add original
+        augmented_windows.append(window)
+        augmented_labels.append(label)
+        
+        # Add augmented versions
         aug_windows = augment_window(window, AUGMENTATION_FACTOR)
         augmented_windows.extend(aug_windows)
         augmented_labels.extend([label] * len(aug_windows))
     
-    X = np.array(augmented_windows)
-    y = np.array(augmented_labels)
+    X_train = np.array(augmented_windows)
+    y_train = np.array(augmented_labels)
+    X_test = windows_test
+    y_test = labels_test
     
-    print(f"After augmentation: {len(X)} samples")
+    print(f"After augmentation - Train: {len(X_train)}, Test: {len(X_test)}")
     
-    # 4. Encode labels
-    print("\n[4/6] Encoding labels...")
+    # 5. Encode labels
+    print("\n[5/7] Encoding labels...")
     label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
-    y_categorical = keras.utils.to_categorical(y_encoded)
+    y_train_encoded = label_encoder.fit_transform(y_train)
+    y_test_encoded = label_encoder.transform(y_test)
+    
+    y_train_categorical = keras.utils.to_categorical(y_train_encoded)
+    y_test_categorical = keras.utils.to_categorical(y_test_encoded)
     
     print(f"Classes: {label_encoder.classes_}")
     
-    # 5. Normalize data
-    print("\n[5/6] Normalizing data...")
-    n_samples, n_timesteps, n_features = X.shape
-    X_reshaped = X.reshape(-1, n_features)
+    # 6. Normalize
+    print("\n[6/7] Normalizing data...")
+    n_train, n_timesteps, n_features = X_train.shape
+    X_train_reshaped = X_train.reshape(-1, n_features)
+    X_test_reshaped = X_test.reshape(-1, n_features)
     
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_reshaped)
-    X_scaled = X_scaled.reshape(n_samples, n_timesteps, n_features)
+    X_train_scaled = scaler.fit_transform(X_train_reshaped).reshape(n_train, n_timesteps, n_features)
+    X_test_scaled = scaler.transform(X_test_reshaped).reshape(len(X_test), n_timesteps, n_features)
     
-    # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y_categorical, test_size=0.2, random_state=42, stratify=y_encoded
-    )
+    # 7. Build and train
+    print("\n[7/7] Building and training model...")
     
-    print(f"Training set: {len(X_train)} samples")
-    print(f"Test set: {len(X_test)} samples")
-    
-    # 6. Build and train model
-    print("\n[6/6] Building and training model...")
-    
-    # Try both models
     model = create_cnn_lstm_model(
         input_shape=(n_timesteps, n_features),
         num_classes=len(label_encoder.classes_)
@@ -281,73 +275,74 @@ def main():
     # Callbacks
     early_stopping = keras.callbacks.EarlyStopping(
         monitor='val_loss',
-        patience=15,
-        restore_best_weights=True
+        patience=20,
+        restore_best_weights=True,
+        min_delta=0.001
     )
     
     reduce_lr = keras.callbacks.ReduceLROnPlateau(
         monitor='val_loss',
         factor=0.5,
-        patience=5,
-        min_lr=0.00001
+        patience=8,
+        min_lr=0.00001,
+        verbose=1
     )
     
     # Train
     history = model.fit(
-        X_train, y_train,
-        validation_data=(X_test, y_test),
+        X_train_scaled, y_train_categorical,
+        validation_data=(X_test_scaled, y_test_categorical),
         epochs=100,
-        batch_size=32,
+        batch_size=min(32, len(X_train_scaled) // 4),
         callbacks=[early_stopping, reduce_lr],
         verbose=1
     )
     
     # Evaluate
-    print("\n" + "=" * 60)
-    print("EVALUATION RESULTS")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("RESULTS")
+    print("=" * 70)
     
-    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
+    test_loss, test_acc = model.evaluate(X_test_scaled, y_test_categorical, verbose=0)
     print(f"Test Accuracy: {test_acc * 100:.2f}%")
     print(f"Test Loss: {test_loss:.4f}")
     
     # Save model
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_name = f'gesture_model_{timestamp}.h5'
-    model.save(model_name)
-    print(f"\nModel saved as: {model_name}")
-    
-    # Save label encoder classes
+    model.save(f'gesture_model_{timestamp}.keras')
     np.save(f'label_classes_{timestamp}.npy', label_encoder.classes_)
+    print(f"\nModel saved as: gesture_model_{timestamp}.keras")
     
     # Plot training history
     plt.figure(figsize=(12, 4))
     
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Val Accuracy')
-    plt.title('Model Accuracy')
+    plt.plot(history.history['accuracy'], label='Train')
+    plt.plot(history.history['val_accuracy'], label='Validation')
+    plt.title('Accuracy')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
     plt.grid(True, alpha=0.3)
     
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss')
-    plt.plot(history.history['val_loss'], label='Val Loss')
-    plt.title('Model Loss')
+    plt.plot(history.history['loss'], label='Train')
+    plt.plot(history.history['val_loss'], label='Validation')
+    plt.title('Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
     plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig(f'training_history_{timestamp}.png')
-    plt.show()
+    plt.savefig(f'training_history_{timestamp}.png', dpi=150)
+    print(f"Training plot saved: training_history_{timestamp}.png")
+    plt.close()
     
-    y_pred = model.predict(X_test)
+    # Confusion matrix
+    y_pred = model.predict(X_test_scaled, verbose=0)
     y_pred_classes = np.argmax(y_pred, axis=1)
-    y_test_classes = np.argmax(y_test, axis=1)
+    y_test_classes = np.argmax(y_test_categorical, axis=1)
     
     cm = confusion_matrix(y_test_classes, y_pred_classes)
     
@@ -359,8 +354,9 @@ def main():
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
     plt.tight_layout()
-    plt.savefig(f'confusion_matrix_{timestamp}.png')
-    plt.show()
+    plt.savefig(f'confusion_matrix_{timestamp}.png', dpi=150)
+    print(f"Confusion matrix saved: confusion_matrix_{timestamp}.png")
+    plt.close()
     
     print("\nClassification Report:")
     print(classification_report(y_test_classes, y_pred_classes, 

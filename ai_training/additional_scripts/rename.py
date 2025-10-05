@@ -55,7 +55,7 @@ def process_dataset_folder(root_folder='dataset'):
     """
     # Define replacements
     replacements = {
-        'syf': 'Syf'
+        'Udarzenia_lewo': 'Udarzenia_lewa'
     }
     
     print("=" * 70)

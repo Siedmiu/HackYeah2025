@@ -7,6 +7,7 @@ from keybinding_dialog import KeyBindingDialog
 from PyQt5.QtWidgets import QDialog
 from joystick import Joystick
 from gesture_detection import GestureDetectionWindow
+from heurystic import HeuristicGestureWindow
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
@@ -121,10 +122,19 @@ class MainWindow(QMainWindow):
         self.button_hotkey.setFixedSize(200, 50)
         layout.addWidget(self.button_hotkey, alignment=Qt.AlignCenter)
 
+         # self.detect_btn = QPushButton("Detect Movement")
+        # self.detect_btn.clicked.connect(self.open_gesture_detection)
+        # self.detect_btn.setFixedSize(200, 50)  # Changed from self.button_hotkey to self.detect_btn
+        # layout.addWidget(self.detect_btn, alignment=Qt.AlignCenter)  # Changed from self.button_hotkey to self.detect_btn
+
+        self.heuristic_btn = QPushButton("Detect Gestures (Heuristic)")
+        self.heuristic_btn.clicked.connect(self.open_heuristic_detector)
+        self.heuristic_btn.setFixedSize(200, 50)
+        
         self.detect_btn = QPushButton("Detect Movement")
         self.detect_btn.clicked.connect(self.open_gesture_detection)
-        self.detect_btn.setFixedSize(200, 50)
-        layout.addWidget(self.detect_btn, alignment=Qt.AlignCenter)
+        self.detect_btn.setFixedSize(200, 50)  # Changed from self.button_hotkey to self.detect_btn
+        layout.addWidget(self.detect_btn, alignment=Qt.AlignCenter)  # Changed from self.button_hotkey to self.detect_btn
 
         # Przycisk do ładowania modelu gestów
         self.load_gesture_model_btn = QPushButton("Load Gesture Model")
@@ -366,6 +376,10 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.esc_press()
         super().keyPressEvent(event)
+    
+    def open_heuristic_detector(self):
+        self.heuristic_window = HeuristicGestureWindow(self, self.serial_reader)
+        self.heuristic_window.show()
 
     # Funkcje obsługi przycisków
     def on_button_start_click(self):

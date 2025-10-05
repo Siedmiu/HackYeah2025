@@ -1,3 +1,0 @@
-Participant_ID,Activity_Type,Timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb,mpu_temp
-4,Jumping,2025-10-05 03:00:48.694,0.153,-10.082,4.52,-0.258,0.062,-0.067,1.961,2.04,5.884,1.763,0.729,-0.193,1962.0,-23613.0,-2045.0,1965,1898,1,1841,1914,1,0
-4,Jumping,2025-10-05 03:00:48.803,0.553,-3.012,3.543,-0.648,-0.687,0.39,-0.353,-0.941,8.826,0.197,0.167,0.335,4173.0,-9725.0,-2266.0,1958,1895,1,1840,1909,1,0

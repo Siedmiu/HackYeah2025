@@ -52,7 +52,7 @@ class DataGatheringWindow(QDialog):
             "Running",
             "Jumping",
             "Udarzenia",
-            "Udarzenia_l",
+            "Udarzenia_lewo",
             "Kucania",
             "Strzal",
             "Standing",
@@ -61,7 +61,7 @@ class DataGatheringWindow(QDialog):
             "Descending_Stairs",
             "Cycling",
             "Custom",
-            "syf"
+            "Syf"
         ])
         activity_layout.addWidget(self.activity_combo)
         layout.addLayout(activity_layout)
