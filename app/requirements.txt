@@ -1,3 +1,6 @@
 PyQt5
 pyserial
 pyautogui
+numpy
+tensorflow
+scikit-learn
