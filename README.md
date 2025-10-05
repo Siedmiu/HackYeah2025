@@ -17,3 +17,8 @@ We will develop the integration of our controller with Minecraft bow-shooting an
 ### Technological stack
 * Platfotm IO (Arduino framework) 
 * Python:  desktop aplication (Qt); training neural network for gesture detection;  
+
+### zmapowanie
+lewa - mpu,
+prawa - l3gd, lsm_a...
+tulowie - adx
