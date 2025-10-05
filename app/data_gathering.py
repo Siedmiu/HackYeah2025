@@ -83,11 +83,11 @@ class DataGatheringWindow(QDialog):
         # file_layout.addWidget(self.browse_button)
         # layout.addLayout(file_layout)
         
-        file_path = f"dataset/data_{self.participant_input}_{self.device_input}_{self.custom_activity_input}.csv"
+        file_path = self.get_file_path() #f"dataset/data_{self.participant_input}_{self.device_input}_{self.custom_activity_input}.csv"
 
         # Display it in the QLineEdit (read-only)
         self.file_path_input = QLineEdit()
-        self.file_path_input.setText(file_path)
+        self.file_path_input.setText("Path would be generated")#file_path)
         self.file_path_input.setReadOnly(True)
 
         # Add it to layout
@@ -133,7 +133,17 @@ class DataGatheringWindow(QDialog):
         layout.addWidget(self.close_button)
         
         self.setLayout(layout)
-        
+    
+    # Generate proper file path using actual values
+    def get_file_path(self):
+        participant_id = self.participant_input.value()
+        device_id = self.device_input.text().strip()
+        activity = self.activity_combo.currentText()
+        if activity == "Custom":
+            activity = self.custom_activity_input.text().strip()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"dataset/data_P{participant_id}_{device_id}_{activity}_{timestamp}.csv"
+
     def on_activity_changed(self, text):
         """Show/hide custom activity input based on selection"""
         self.custom_activity_input.setVisible(text == "Custom")
@@ -174,6 +184,14 @@ class DataGatheringWindow(QDialog):
         if activity == "Custom":
             activity = self.custom_activity_input.text().strip()
         
+        # *** GENERATE FILE PATH HERE WITH CURRENT VALUES ***
+        file_path = self.get_file_path()
+        self.file_path_input.setText(file_path)
+        
+        # Create directory if it doesn't exist
+        import os
+        os.makedirs('dataset', exist_ok=True)
+        
         # Create CSV file
         try:
             self.csv_file = open(self.file_path_input.text(), 'w', newline='')
@@ -182,7 +200,7 @@ class DataGatheringWindow(QDialog):
             # Write header matching Arduino output plus metadata
             # device_id do usunięcia!!!
             self.csv_writer.writerow([
-                'Participant_ID', 'Activity_Type', 'Device_ID', 'Timestamp',
+                'Participant_ID', 'Activity_Type', 'Timestamp',
                 'mpu_ax', 'mpu_ay', 'mpu_az', 'mpu_gx', 'mpu_gy', 'mpu_gz',
                 'adxl_ax', 'adxl_ay', 'adxl_az',
                 'l3gd_gx', 'l3gd_gy', 'l3gd_gz',
@@ -198,13 +216,13 @@ class DataGatheringWindow(QDialog):
             self.start_button.setEnabled(False)
             self.stop_button.setEnabled(True)
             self.participant_input.setEnabled(False)
-            self.device_input.setEnabled(False)
+            #self.device_input.setEnabled(False)
             self.activity_combo.setEnabled(False)
             self.custom_activity_input.setEnabled(False)
             #self.browse_button.setEnabled(False)
             
             self.add_status(f"Recording started: {activity}")
-            self.add_status(f"Participant: {self.participant_input.value()}, Device: {self.device_input.text()}")
+            self.add_status(f"Participant: {self.participant_input.value()}")#, Device: {self.device_input.text()}")
             
         except Exception as e:
             self.add_status(f"Error opening file: {str(e)}")
@@ -222,7 +240,7 @@ class DataGatheringWindow(QDialog):
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
         self.participant_input.setEnabled(True)
-        self.device_input.setEnabled(True)
+        #self.device_input.setEnabled(True)
         self.activity_combo.setEnabled(True)
         self.custom_activity_input.setEnabled(True)
         #self.browse_button.setEnabled(True)
@@ -245,7 +263,7 @@ class DataGatheringWindow(QDialog):
             row = [
                 self.participant_input.value(),  # Participant_ID
                 activity,                         # Activity_Type
-                self.device_input.text().strip(), # Device_ID
+                #self.device_input.text().strip(), # Device_ID
                 timestamp,                        # Timestamp
                 # MPU6050 data
                 sensor_data.get('mpu_ax', 0),
