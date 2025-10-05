@@ -1,0 +1,3 @@
+Participant_ID,Activity_Type,Timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb,mpu_temp
+1,strzal,2025-10-05 02:27:33.474,5.531,-5.519,5.425,-0.31,0.047,0.058,1.961,2.04,2.118,-0.384,-0.985,2.152,0.0,0.0,12289.0,1965,1901,1,1847,1901,1,0
+1,strzal,2025-10-05 02:27:36.602,-9.105,-5.667,-1.384,-0.538,0.199,0.219,1.961,2.04,2.118,0.192,0.109,-0.071,0.0,0.0,13320.0,1955,1902,1,1847,1905,1,0

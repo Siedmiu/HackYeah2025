@@ -1,0 +1,2 @@
+Participant_ID,Activity_Type,Timestamp,mpu_ax,mpu_ay,mpu_az,mpu_gx,mpu_gy,mpu_gz,adxl_ax,adxl_ay,adxl_az,l3gd_gx,l3gd_gy,l3gd_gz,lsm_ax,lsm_ay,lsm_az,joy_lx,joy_ly,joy_lb,joy_rx,joy_ry,joy_rb,mpu_temp
+3,Strzal,2025-10-05 02:56:09.200,4.556,-4.209,-0.895,0.231,0.155,0.294,1.961,2.04,2.118,-4.617,4.717,-8.658,0.0,2.0,5124.0,1968,1895,1,1843,1902,1,0
