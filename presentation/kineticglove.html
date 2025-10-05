@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KineticGlove Pitch Deck</title>
+    <style>
+        @media print {
+            .slide {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        .slide {
+            width: 297mm;
+            height: 210mm;
+            padding: 60px;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 150%;
+            background: radial-gradient(ellipse at center, rgba(58, 134, 255, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        .slide-number {
+            position: absolute;
+            bottom: 30px;
+            right: 60px;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .logo {
+            position: absolute;
+            top: 40px;
+            left: 60px;
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d4ff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        h1 {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #00d4ff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        h2 {
+            font-size: 56px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #00d4ff;
+        }
+        
+        h3 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #a78bfa;
+        }
+        
+        .tagline {
+            font-size: 36px;
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+        
+        .subtitle {
+            font-size: 28px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            margin-top: 40px;
+        }
+        
+        .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+        
+        .feature-box, .benefit-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+        }
+        
+        .feature-box h3, .benefit-box h3 {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        
+        .feature-box p, .benefit-box p {
+            font-size: 20px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        ul {
+            list-style: none;
+            font-size: 24px;
+            line-height: 2;
+            margin-top: 20px;
+        }
+        
+        ul li {
+            padding-left: 40px;
+            position: relative;
+        }
+        
+        ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #00d4ff;
+            font-size: 28px;
+        }
+        
+        .highlight {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .stat-box {
+            text-align: center;
+            background: rgba(167, 139, 250, 0.1);
+            border: 2px solid rgba(167, 139, 250, 0.3);
+            border-radius: 15px;
+            padding: 30px 20px;
+        }
+        
+        .stat-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #a78bfa;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .comparison-table {
+            width: 100%;
+            margin-top: 40px;
+            border-collapse: collapse;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .comparison-table th {
+            background: rgba(0, 212, 255, 0.2);
+            font-size: 22px;
+            color: #00d4ff;
+        }
+        
+        .comparison-table td {
+            font-size: 20px;
+        }
+        
+        .comparison-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .checkmark {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        .crossmark {
+            color: #ff4444;
+            font-weight: bold;
+        }
+        
+        .product-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 60px;
+            margin-top: 50px;
+        }
+        
+        .glove {
+            width: 150px;
+            height: 200px;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border-radius: 40px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.4);
+        }
+        
+        .glove::after {
+            content: 'IMU + JOY';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .glove::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(167, 139, 250, 0.8);
+            border-radius: 50%;
+        }
+        
+        .body-sensor {
+            width: 120px;
+            height: 160px;
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            border-radius: 30px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(167, 139, 250, 0.4);
+        }
+        
+        .body-sensor::after {
+            content: 'BODY IMU';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .cta {
+            margin-top: 60px;
+            text-align: center;
+        }
+        
+        .cta-text {
+            font-size: 32px;
+            margin-bottom: 30px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Slide 1: The Problem -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <h2>The Problem</h2>
+        <p class="subtitle" style="font-size: 40px; line-height: 1.8; margin-bottom: 60px; max-width: 90%;">
+            Millions of people of all ages are stuck in a sedentary lifestyle, spending hours in front of screens.
+        </p>
+        <p class="subtitle" style="font-size: 40px; line-height: 1.8; max-width: 90%;">
+            Their physical fitness and overall well-being are declining rapidly.
+        </p>
+    </div>
+    <div class="slide-number">1</div>
+</div>
+
+<!-- Slide 2: The Solution -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px; align-items: center;">
+            <div>
+                <h1 style="font-size: 64px; margin-bottom: 30px;">The Solution? - KineticGlove</h1>
+                <p class="tagline" style="font-size: 38px; margin-bottom: 50px;">Your Body. Your Controller. Your Adventure.</p>
+                <p class="subtitle" style="font-size: 32px; line-height: 1.7;">
+                    A gaming glove system that transforms your entire body into a game controller. Immerse yourself using our AI-powered gesture recognision.
+                </p>
+            </div>
+            <div style="display: flex; justify-content: center; align-items: center;">
+                <div style="width: 100%; height: 400px; background: rgba(0, 212, 255, 0.1); border: 3px dashed rgba(0, 212, 255, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                    <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center; padding: 20px;">Product Photo<br>[Placeholder]</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">2</div>
+</div>
+
+<!-- Slide 3: Key Features -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <h2 style="margin-bottom: 60px;">What Is KineticGlove?</h2>
+        <div class="three-column" style="margin-top: 0;">
+            <div class="feature-box">
+                <h3 style="font-size: 32px;">Hybrid Control</h3>
+                <p style="font-size: 22px;">Precision joysticks + AI gesture recognition for gaming and fitness</p>
+            </div>
+            <div class="feature-box">
+                <h3 style="font-size: 32px;">Full-Body Tracking</h3>
+                <p style="font-size: 22px;">Body IMU captures every jump, duck, and dodge in real-time</p>
+            </div>
+            <div class="feature-box">
+                <h3 style="font-size: 32px;">Custom Mapping</h3>
+                <p style="font-size: 22px;">Map any gesture or movement to any game action</p>
+            </div>
+        </div>
+        <div class="two-column" style="margin-top: 50px;">
+            <div class="feature-box">
+                <h3 style="font-size: 32px;">Real Fitness Results</h3>
+                <p style="font-size: 22px;">Burns calories, improves reflexes, and builds coordination</p>
+            </div>
+            <div class="feature-box" style="background: rgba(0, 212, 255, 0.15); border-color: #00d4ff;">
+                <h3 style="font-size: 32px; color: #00d4ff;">Most Importantly...</h3>
+                <p style="font-size: 28px; font-weight: bold; color: #fff;">Great Fun!</p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">3</div>
+</div>
+
+<!-- Slide 4: Why KineticGlove Wins -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <h2 style="margin-bottom: 80px;">Why KineticGlove Wins</h2>
+        <div class="three-column" style="margin-top: 0; gap: 60px;">
+            <div class="feature-box" style="background: rgba(0, 212, 255, 0.1); border-color: #00d4ff; padding: 50px 30px;">
+                <h3 style="font-size: 36px; color: #00d4ff; margin-bottom: 25px;">vs VR Systems</h3>
+                <p style="font-size: 28px; font-weight: bold; margin-bottom: 20px;">10x Cheaper</p>
+                <p style="font-size: 22px; line-height: 1.6;">Much cheaper than VR hardware with equal motion detection</p>
+            </div>
+            <div class="feature-box" style="background: rgba(167, 139, 250, 0.1); border-color: #a78bfa; padding: 50px 30px;">
+                <h3 style="font-size: 36px; color: #a78bfa; margin-bottom: 25px;">vs Wii Controllers</h3>
+                <p style="font-size: 28px; font-weight: bold; margin-bottom: 20px;">More Immersive</p>
+                <p style="font-size: 22px; line-height: 1.6;">Full body tracking instead of single hand motion</p>
+            </div>
+            <div class="feature-box" style="background: rgba(0, 212, 255, 0.1); border-color: #00d4ff; padding: 50px 30px;">
+                <h3 style="font-size: 36px; color: #00d4ff; margin-bottom: 25px;">vs Kinect Camera</h3>
+                <p style="font-size: 28px; font-weight: bold; margin-bottom: 20px;">No Occlusion</p>
+                <p style="font-size: 22px; line-height: 1.6;">No limb overlap issues or visibility problems</p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">4</div>
+</div>
+
+<!-- Slide 5: AI-Powered Universal Solution -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; height: 100%;">
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="width: 100%; height: 400px; background: rgba(0, 212, 255, 0.1); border: 3px dashed rgba(0, 212, 255, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                    <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center; padding: 20px;">Player with<br>KineticGlove<br>[Photo Placeholder]</p>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="width: 100%; height: 400px; background: rgba(167, 139, 250, 0.1); border: 3px dashed rgba(167, 139, 250, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                    <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center; padding: 20px;">Game Character<br>Mimicking Action<br>[Game Screenshot]</p>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                <h2 style="font-size: 42px; margin-bottom: 40px; color: #00d4ff;">Universal Solution</h2>
+                <p class="subtitle" style="font-size: 26px; line-height: 1.8; margin-bottom: 40px;">
+                    Our neural network model can learn to recognise sets of user defined gestures, making KineticGlove compatible with any activity.
+                </p>
+                <p class="subtitle" style="font-size: 26px; line-height: 1.8;">
+                    Map custom gestures to any action or keypress - one system, every device.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">5</div>
+</div>
+
+<!-- Slide 6: Demo Video -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content" style="display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center;">
+            <div style="width: 700px; height: 450px; background: rgba(0, 0, 0, 0.4); border: 4px solid rgba(0, 212, 255, 0.5); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 40px;">
+                <p style="font-size: 32px; color: rgba(255, 255, 255, 0.7);">[Video Embed / QR Code Placeholder]</p>
+            </div>
+            <p class="subtitle" style="font-size: 28px; color: #00d4ff;">
+                Scan to watch demo or visit: [link placeholder]
+            </p>
+        </div>
+    </div>
+    <div class="slide-number">6</div>
+</div>
+
+<!-- Slide 7: Hardware -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <h2 style="margin-bottom: 50px;">Hardware Overview</h2>
+        <div class="two-column" style="gap: 60px;">
+            <div>
+                <div class="feature-box" style="margin-bottom: 30px;">
+                    <h3 style="font-size: 32px;">Data Transfer</h3>
+                    <p style="font-size: 24px; line-height: 1.8;">
+                        <strong style="color: #00d4ff;">Wireless:</strong> Bluetooth 5.0 / 2.4GHz<br>
+                        <strong style="color: #00d4ff;">Wired:</strong> USB-C for low-latency gaming
+                    </p>
+                </div>
+                <div class="feature-box">
+                    <h3 style="font-size: 32px;">Key Components</h3>
+                    <p style="font-size: 24px; line-height: 1.8;">
+                        • 6-axis IMU (per glove)<br>
+                        • 9-axis IMU (body sensor)<br>
+                        • Dual analog joysticks
+                    </p>
+                </div>
+            </div>
+            <div>
+                <div style="background: rgba(167, 139, 250, 0.1); border: 3px solid rgba(167, 139, 250, 0.4); border-radius: 20px; padding: 40px; height: 100%;">
+                    <h3 style="font-size: 32px; margin-bottom: 30px; color: #a78bfa;">Bill of Materials & Pricing</h3>
+                    <div style="background: rgba(0, 0, 0, 0.3); border-radius: 10px; padding: 30px; height: 300px; display: flex; align-items: center; justify-content: center;">
+                        <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center;">
+                            [BOM Table Placeholder]<br><br>
+                            Component costs and<br>pricing breakdown
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">7</div>
+</div>
+
+<!-- Slide 8: Conclusion -->
+<div class="slide">
+    <div class="logo">KineticGlove</div>
+    <div class="content">
+        <h2 style="margin-bottom: 60px; text-align: center;">Why KineticGlove Succeeds</h2>
+        <div class="two-column" style="gap: 50px;">
+            <div>
+                <div class="feature-box" style="margin-bottom: 30px; background: rgba(0, 212, 255, 0.1); border-color: #00d4ff;">
+                    <h3 style="font-size: 32px; color: #00d4ff;">Affordable</h3>
+                    <p style="font-size: 22px; line-height: 1.7;">Low manufacturing cost enables accessible pricing for everyone</p>
+                </div>
+                <div class="feature-box" style="margin-bottom: 30px; background: rgba(167, 139, 250, 0.1); border-color: #a78bfa;">
+                    <h3 style="font-size: 32px; color: #a78bfa;">Innovative</h3>
+                    <p style="font-size: 22px; line-height: 1.7;">AI gesture recognition combined with traditional joystick controls</p>
+                </div>
+            </div>
+            <div>
+                <div class="feature-box" style="margin-bottom: 30px; background: rgba(0, 212, 255, 0.1); border-color: #00d4ff;">
+                    <h3 style="font-size: 32px; color: #00d4ff;">Effective</h3>
+                    <p style="font-size: 22px; line-height: 1.7;">Real workout results from enjoyable gaming</p>
+                </div>
+                <div class="feature-box" style="background: rgba(167, 139, 250, 0.1); border-color: #a78bfa;">
+                    <h3 style="font-size: 32px; color: #a78bfa;">Scalable</h3>
+                    <p style="font-size: 22px; line-height: 1.7;">Compatible with existing games via custom mapping. Can accommodate haptics and heart sensors</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">8</div>
+</div>
+
+</body>
+</html>
