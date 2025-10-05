@@ -6,7 +6,7 @@ from data_gathering import DataGatheringWindow
 from keybinding_dialog import KeyBindingDialog
 from PyQt5.QtWidgets import QDialog
 from joystick import Joystick
-
+from gesture_detection import GestureDetectionWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -85,6 +85,12 @@ class MainWindow(QMainWindow):
         self.button_hotkey.setFixedSize(200, 50)
         layout.addWidget(self.button_hotkey, alignment=Qt.AlignCenter)
 
+        self.detect_btn = QPushButton("Detect Movement")
+        self.detect_btn.clicked.connect(self.open_gesture_detection)
+        self.detect_btn.setFixedSize(200, 50)  # Changed from self.button_hotkey to self.detect_btn
+        layout.addWidget(self.detect_btn, alignment=Qt.AlignCenter)  # Changed from self.button_hotkey to self.detect_btn
+
+
         self.button_close = QPushButton("Wyjdź")
         self.button_close.clicked.connect(self.on_button_close_click)
         self.button_close.setFixedSize(200, 50)
@@ -113,6 +119,9 @@ class MainWindow(QMainWindow):
         else:  # Jeśli kliknięto "Anuluj"
             self.label.setText("Anulowano przypisanie klawiszy")
 
+    def open_gesture_detection(self):
+        self.gesture_window = GestureDetectionWindow(self, self.serial_reader)
+        self.gesture_window.show()
 
     def on_button_calibration_click(self):
         self.label.setText("Button 3 clicked!")

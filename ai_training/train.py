@@ -9,6 +9,8 @@ import os
 import glob
 from datetime import datetime
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
 
 # ==================== CONFIGURATION ====================
 WINDOW_SIZE = 50  # Number of samples per window
@@ -65,16 +67,16 @@ def augment_window(window, num_augmentations=3):
     return augmented
 
 # ==================== DATA LOADING ====================
-def load_gesture_data(data_dir='dataset'):
+def load_gesture_data(data_dir='./dataset'):
     """Load all gesture CSV files"""
     all_data = []
     gesture_files = {
-        'jumping': 'data_*_Jumping_*.csv',
-        'kucanie': 'data_*_Kucanie_*.csv',
-        'udarzanie': 'data_*_Udarzanie_*.csv',
-        'udarzanie_l': 'data_*_Udarzanie_L_*.csv',
-        'strzal': 'data_*_Strzal_*.csv',
-        'syf': 'data_*_Syf_*.csv'
+        'Jumping': 'data_*_Jumping_*.csv',
+        'Kucania': 'data_*_Kucania_*.csv',
+        'Udarzania': 'data_*_Udarzania_*.csv',
+        'Udarzania_lewo': 'data_*_Udarzanie_lewo_*.csv',
+        'Strzal': 'data_*_Strzal_*.csv',
+        'Syf': 'data_*_Syf_*.csv'
     }
     
     for gesture, pattern in gesture_files.items():
@@ -342,10 +344,6 @@ def main():
     plt.tight_layout()
     plt.savefig(f'training_history_{timestamp}.png')
     plt.show()
-    
-    # Confusion matrix
-    from sklearn.metrics import confusion_matrix, classification_report
-    import seaborn as sns
     
     y_pred = model.predict(X_test)
     y_pred_classes = np.argmax(y_pred, axis=1)
