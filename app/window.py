@@ -23,6 +23,9 @@ class MainWindow(QMainWindow):
         self.data_window = None
         self.joystick_controller = Joystick()
         
+        # Control mode: 'joystick' or 'gestures'
+        self.control_mode = 'joystick'  # Domyślnie joystick
+        
         # Gesture detection components
         self.gesture_model = None
         self.gesture_scaler = None
@@ -100,6 +103,31 @@ class MainWindow(QMainWindow):
         self.info_label.setAlignment(Qt.AlignCenter)
         self.info_label.setStyleSheet("font-size: 16px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;")
         layout.addWidget(self.info_label)
+
+        # === TRYB STEROWANIA ===
+        mode_label = QLabel("Tryb sterowania:")
+        mode_label.setAlignment(Qt.AlignCenter)
+        mode_label.setStyleSheet("font-size: 14px; font-weight: bold; padding: 10px;")
+        layout.addWidget(mode_label)
+        
+        # Przyciski wyboru trybu
+        self.joystick_mode_btn = QPushButton("🎮 Tryb Joystick")
+        self.joystick_mode_btn.clicked.connect(self.set_joystick_mode)
+        self.joystick_mode_btn.setFixedSize(200, 50)
+        self.joystick_mode_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        layout.addWidget(self.joystick_mode_btn, alignment=Qt.AlignCenter)
+        
+        self.gesture_mode_btn = QPushButton("✋ Tryb Gestów")
+        self.gesture_mode_btn.clicked.connect(self.set_gesture_mode)
+        self.gesture_mode_btn.setFixedSize(200, 50)
+        self.gesture_mode_btn.setStyleSheet("background-color: #757575; color: white;")
+        layout.addWidget(self.gesture_mode_btn, alignment=Qt.AlignCenter)
+        
+        # Label pokazujący aktywny tryb
+        self.mode_status_label = QLabel("Aktywny: Tryb Joystick")
+        self.mode_status_label.setAlignment(Qt.AlignCenter)
+        self.mode_status_label.setStyleSheet("font-size: 12px; padding: 5px; color: #4CAF50; font-weight: bold;")
+        layout.addWidget(self.mode_status_label)
 
         # Buttons
         self.button_start = QPushButton("Start")
@@ -381,13 +409,51 @@ class MainWindow(QMainWindow):
         self.heuristic_window = HeuristicGestureWindow(self, self.serial_reader)
         self.heuristic_window.show()
 
+    def set_joystick_mode(self):
+        """Przełącz na tryb joystick"""
+        self.control_mode = 'joystick'
+        
+        # Zatrzymaj wykrywanie gestów jeśli było aktywne
+        if parameters.game_state == "Game":
+            self.gesture_buffer.clear()
+        
+        # Aktualizuj przyciski
+        self.joystick_mode_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        self.gesture_mode_btn.setStyleSheet("background-color: #757575; color: white;")
+        self.mode_status_label.setText("Aktywny: Tryb Joystick 🎮")
+        self.mode_status_label.setStyleSheet("font-size: 12px; padding: 5px; color: #4CAF50; font-weight: bold;")
+        
+        self.label.setText("Tryb joystick wybrany\nJoysticki będą sterować grą")
+    
+    def set_gesture_mode(self):
+        """Przełącz na tryb gestów"""
+        self.control_mode = 'gestures'
+        
+        # Zwolnij wszystkie klawisze z joysticka
+        if parameters.game_state == "Game":
+            self.joystick_controller.release_all_keys()
+        
+        # Aktualizuj przyciski
+        self.joystick_mode_btn.setStyleSheet("background-color: #757575; color: white;")
+        self.gesture_mode_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        self.mode_status_label.setText("Aktywny: Tryb Gestów ✋")
+        self.mode_status_label.setStyleSheet("font-size: 12px; padding: 5px; color: #4CAF50; font-weight: bold;")
+        
+        if self.gesture_enabled and self.gesture_model is not None:
+            self.label.setText("Tryb gestów wybrany\nGesty będą sterować grą")
+        else:
+            self.label.setText("Tryb gestów wybrany\n⚠️ Załaduj model gestów przed startem!")
+
     # Funkcje obsługi przycisków
     def on_button_start_click(self):
-        if not self.gesture_enabled or self.gesture_model is None:
-            self.label.setText("Please load gesture model first!\nPress [Load Gesture Model]")
-            return
+        # Sprawdź wymagania dla trybu gestów
+        if self.control_mode == 'gestures':
+            if not self.gesture_enabled or self.gesture_model is None:
+                self.label.setText("Please load gesture model first!\nPress [Load Gesture Model]")
+                return
         
-        self.label.setText("Game mode activated\nPress [ESC] to cancel")
+        mode_text = "Joystick" if self.control_mode == 'joystick' else "Gesty"
+        self.label.setText(f"Tryb {mode_text} aktywowany\nPress [ESC] to cancel")
         parameters.game_state = "Game"
         
         # Reset cooldown
@@ -395,8 +461,11 @@ class MainWindow(QMainWindow):
         self.current_gesture = None
         self.gesture_confidence = 0
         
-        # Start gesture prediction timer
-        self.gesture_timer.start(self.prediction_interval)
+        # Start gesture prediction timer TYLKO w trybie gestów
+        if self.control_mode == 'gestures':
+            self.gesture_timer.start(self.prediction_interval)
+        else:
+            self.gesture_timer.stop()
         
         # Reset display
         self.info_label.setText("Gesture: Waiting...")
@@ -465,6 +534,9 @@ class MainWindow(QMainWindow):
             self.gesture_timer.stop()
             self.gesture_display_timer.stop()
             
+            # Zwolnij wszystkie klawisze joysticka
+            self.joystick_controller.release_all_keys()
+            
             # Reset gesture state
             self.last_gesture_time = 0
             self.current_gesture = None
@@ -489,11 +561,12 @@ class MainWindow(QMainWindow):
         
         # Jeśli jesteś w trybie Game
         if parameters.game_state == "Game":
-            # Wywołaj joystick controller
-            self.joystick_controller.update()
+            # TRYB JOYSTICK - sterowanie joystickami
+            if self.control_mode == 'joystick':
+                self.joystick_controller.update()
             
-            # Dodaj dane do bufora gestów (TYLKO jeśli nie jesteśmy w cooldown)
-            if self.gesture_enabled and not self.is_in_cooldown():
+            # TRYB GESTÓW - wykrywanie gestów
+            elif self.control_mode == 'gestures' and self.gesture_enabled and not self.is_in_cooldown():
                 sensor_values = [
                     data.get('mpu_ax', 0.0),
                     data.get('mpu_ay', 0.0),
@@ -512,8 +585,9 @@ class MainWindow(QMainWindow):
             status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
             status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
             status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}\n"
-            if self.gesture_enabled:
-                status_text += f"Buffer: {len(self.gesture_buffer)}/35"
+            status_text += f"Tryb: {self.control_mode.upper()}\n"
+            if self.control_mode == 'gestures' and self.gesture_enabled:
+                status_text += f"Buffer: {len(self.gesture_buffer)}/20"
             self.label.setText(status_text)
         
         # Zapisuj do CSV tylko gdy jest okno data gathering i jest nagrywanie
