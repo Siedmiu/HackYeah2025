@@ -3,20 +3,19 @@ import parameters
 
 class Joystick():
     def __init__(self):
-        # Joystick range 0-4096
+        # Joystick range 0-4095 (12-bit ADC)
+        self.min_value = 0
+        self.max_value = 4095
         self.center = 2048         
-        # Dead zone
-        self.deadzone_radius = 300
+        
+        # Zwiększona strefa martwa - reaguj tylko na wyraźne wychylenie
+        self.deadzone_radius = 600  # Zwiększono z 300 na 600
         self.deadzone_min = self.center - self.deadzone_radius
         self.deadzone_max = self.center + self.deadzone_radius
         
-        # Full range
-        self.min_value = 0
-        self.max_value = 4096
-        
-        # speed for mouse control
+        # Prędkość ruchu
         self.movement_speed = 10
-        self.camera_sensitivity = 5
+        self.camera_sensitivity = 10  # Zwiększono czułość kamery
         
         self.prev_left_button = 0
         self.prev_right_button = 0
@@ -39,25 +38,15 @@ class Joystick():
         right_y = parameters.joystick_right_y
         right_btn = parameters.joystick_right_button
         
-        left_binding = parameters.key_bindings.get('joy_left', {}).get('value')
-        right_binding = parameters.key_bindings.get('joy_right', {}).get('value')
+        # Pobierz przypisania klawiszy z konfiguracji
         left_btn_binding = parameters.key_bindings.get('joy_lb', {}).get('value')
         right_btn_binding = parameters.key_bindings.get('joy_rb', {}).get('value')
         
-        if left_binding == "character_move_wsad":
-            self.handle_character_movement(left_x, left_y, self.wsad_keys)
-        elif left_binding == "character_move_arrows":
-            self.handle_character_movement(left_x, left_y, self.arrow_keys)
-        elif left_binding == "camera_move":
-            self.handle_camera_movement(left_x, left_y)
+        # STAŁE PRZYPISANIE: Lewy joystick = ruch myszki, Prawy joystick = WSAD
+        self.handle_camera_movement(left_x, left_y)
+        self.handle_character_movement(right_x, right_y, self.wsad_keys)
         
-        if right_binding == "character_move_wsad":
-            self.handle_character_movement(right_x, right_y, self.wsad_keys)
-        elif right_binding == "character_move_arrows":
-            self.handle_character_movement(right_x, right_y, self.arrow_keys)
-        elif right_binding == "camera_move":
-            self.handle_camera_movement(right_x, right_y)
-        
+        # Obsługa przycisków joysticków według konfiguracji
         self.handle_button(left_btn, self.prev_left_button, left_btn_binding)
         self.handle_button(right_btn, self.prev_right_button, right_btn_binding)
         
