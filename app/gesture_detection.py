@@ -29,13 +29,13 @@ class GestureDetectionWindow(QDialog):
             'Syf': ['mpu_ax', 'mpu_ay', 'mpu_az', 'adxl_ax', 'adxl_ay', 'adxl_az']
         }
         
-        # Buffer for sliding window (50 samples)
-        self.window_size = 20
+        # Buffer for sliding window - ZOPTYMALIZOWANO dla szybszego wykrywania
+        self.window_size = 35  # Zmniejszono z 35 na 20 próbek
         self.max_features = 6  # Must match training padding
         self.data_buffer = deque(maxlen=self.window_size)
         
-        # Detection settings
-        self.prediction_interval = 500  # ms - predict every 500ms
+        # Detection settings - ZOPTYMALIZOWANO
+        self.prediction_interval = 200  # ms - predict every 200ms (było 500ms)
         self.timer = QTimer()
         self.timer.timeout.connect(self.predict_gesture)
         
@@ -92,7 +92,7 @@ class GestureDetectionWindow(QDialog):
         layout.addWidget(self.confidence_label)
         
         # Buffer status
-        self.buffer_label = QLabel("Buffer: 0/35 samples")
+        self.buffer_label = QLabel("Buffer: 0/20 samples")
         layout.addWidget(self.buffer_label)
         
         # Prediction history

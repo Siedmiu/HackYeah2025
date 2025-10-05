@@ -27,20 +27,20 @@ class MainWindow(QMainWindow):
         self.gesture_model = None
         self.gesture_scaler = None
         self.gesture_label_classes = None
-        self.gesture_buffer = deque(maxlen=35)  # window_size = 35
+        self.gesture_buffer = deque(maxlen=35)
         self.max_features = 6
         self.gesture_enabled = False
         
         # Cooldown system
         self.last_gesture_time = 0
-        self.cooldown_duration = 2.0  # 2 sekundy cooldown
+        self.cooldown_duration = 1.5  # ZOPTYMALIZOWANO: z 2.0 na 1.5s cooldown
         self.current_gesture = None
         self.gesture_confidence = 0
         
         # Timer for gesture prediction
         self.gesture_timer = QTimer()
         self.gesture_timer.timeout.connect(self.predict_gesture_in_game)
-        self.prediction_interval = 500  # ms
+        self.prediction_interval = 200  # ZOPTYMALIZOWANO: z 500ms na 200ms
         
         # Timer to reset gesture display
         self.gesture_display_timer = QTimer()

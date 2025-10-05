@@ -21,7 +21,7 @@ class Joystick():
         self.prev_right_button = 0
         
         # WSAD and arrows mapping
-        self.wsad_keys = {'up': 's', 'down': 'w', 'left': 'a', 'right': 'd'}
+        self.wsad_keys = {'up': 'a', 'down': 'd', 'left': 's', 'right': 'w'}
         self.arrow_keys = {'up': 'left', 'down': 'right', 'left': 'down', 'right': 'up'}
         
         self.pressed_keys = set()
@@ -56,6 +56,7 @@ class Joystick():
     def handle_character_movement(self, x, y, key_map):
         keys_to_press = set()
         
+        # Określ które klawisze powinny być wciśnięte
         if x < self.deadzone_min:
             keys_to_press.add(key_map['left'])
         elif x > self.deadzone_max:
@@ -66,12 +67,16 @@ class Joystick():
         elif y > self.deadzone_max:
             keys_to_press.add(key_map['down'])
         
-        keys_to_release = self.pressed_keys - keys_to_press
-        for key in keys_to_release:
-            if key in key_map.values():
-                pyautogui.keyUp(key)
-                self.pressed_keys.discard(key)
+        # POPRAWKA: Zwalniaj tylko te klawisze z tej mapy, które są obecnie wciśnięte
+        # ale nie powinny być
+        keys_from_this_map = set(key_map.values())
+        keys_to_release = (self.pressed_keys & keys_from_this_map) - keys_to_press
         
+        for key in keys_to_release:
+            pyautogui.keyUp(key)
+            self.pressed_keys.discard(key)
+        
+        # Wciskaj nowe klawisze
         keys_to_press_new = keys_to_press - self.pressed_keys
         for key in keys_to_press_new:
             pyautogui.keyDown(key)
