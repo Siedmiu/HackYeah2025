@@ -301,71 +301,6 @@
             margin-bottom: 30px;
             color: rgba(255, 255, 255, 0.9);
         }
-
-
-
-        /* --- Bill of Materials table (compact neon style) --- */
-.bom-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: rgba(20, 24, 45, 0.55);
-    border: 1px solid rgba(167, 139, 250, 0.3);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.bom-table thead th {
-    padding: 5px 8px;
-    text-align: left;
-    background: linear-gradient(90deg, rgba(0,212,255,0.18), rgba(167,139,250,0.18));
-    color: #bfe9ff;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.bom-table tbody td {
-    padding: 4px 8px;
-    color: rgba(255,255,255,0.9);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.bom-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.bom-table td:nth-child(1),
-.bom-table td:nth-child(3) {
-    text-align: center;
-    color: rgba(255,255,255,0.85);
-}
-
-.bom-table td:last-child,
-.bom-table .price {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.bom-table .total-row {
-    background: linear-gradient(90deg, rgba(167,139,250,0.12), rgba(0,212,255,0.12));
-    font-weight: 700;
-}
-
-.badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(167,139,250,0.15);
-    border: 1px solid rgba(167,139,250,0.3);
-    color: #e9ddff;
-    font-size: 0.8em;
-    font-style: normal;
-}
-
     </style>
 </head>
 <body>
@@ -398,14 +333,19 @@
                 </p>
             </div>
             <div style="display: flex; justify-content: center; align-items: center;">
-                <div style="width: 100%; height: 400px; background: rgba(0, 212, 255, 0.1); border: 3px dashed rgba(0, 212, 255, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
-                    <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center; padding: 20px;">Product Photo<br>[Placeholder]</p>
+                <div style="width: 100%; height: 400px; border-radius: 20px; overflow: hidden; border: 3px solid rgba(0, 212, 255, 0.4);">
+                    <img id="productPhoto" style="width: 100%; height: 100%; object-fit: cover;" alt="KineticGlove Product">
                 </div>
             </div>
         </div>
     </div>
     <div class="slide-number">2</div>
 </div>
+
+<script>
+// Load the product photo
+document.getElementById('productPhoto').src = 'src/20251005_1016011.jpg';
+</script>
 
 <!-- Slide 3: Key Features -->
 <div class="slide">
@@ -444,7 +384,7 @@
 <div class="slide">
     <div class="logo">KineticGlove</div>
     <div class="content">
-        <h2 style="margin-bottom: 80px;">Modern Tech vs KineticGlove/h2>
+        <h2 style="margin-bottom: 80px;">Why KineticGlove Wins</h2>
         <div class="three-column" style="margin-top: 0; gap: 60px;">
             <div class="feature-box" style="background: rgba(0, 212, 255, 0.1); border-color: #00d4ff; padding: 50px 30px;">
                 <h3 style="font-size: 36px; color: #00d4ff; margin-bottom: 25px;">vs VR Systems</h3>
@@ -472,13 +412,13 @@
     <div class="content">
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; height: 100%;">
             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                <div style="width: 100%; height: 400px; background: rgba(0, 212, 255, 0.1); border: 3px dashed rgba(0, 212, 255, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
-                    <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center; padding: 20px;">Player with<br>KineticGlove<br>[Photo Placeholder]</p>
+                <div style="width: 100%; height: 400px; border-radius: 20px; overflow: hidden; border: 3px solid rgba(0, 212, 255, 0.4);">
+                    <img id="playerPhoto" style="width: 100%; height: 100%; object-fit: cover;" alt="Player with KineticGlove">
                 </div>
             </div>
             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                <div style="width: 100%; height: 400px; background: rgba(167, 139, 250, 0.1); border: 3px dashed rgba(167, 139, 250, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
-                    <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center; padding: 20px;">Game Character<br>Mimicking Action<br>[Game Screenshot]</p>
+                <div style="width: 100%; height: 400px; border-radius: 20px; overflow: hidden; border: 3px solid rgba(167, 139, 250, 0.4);">
+                    <img id="gamePhoto" style="width: 100%; height: 100%; object-fit: cover;" alt="Game Character">
                 </div>
             </div>
             <div style="display: flex; flex-direction: column; justify-content: center;">
@@ -494,6 +434,16 @@
     </div>
     <div class="slide-number">5</div>
 </div>
+
+<script>
+// Load player photo
+document.getElementById('playerPhoto').src = 'src/20251005_101643_HDR.jpg';
+</script>
+
+<script>
+// Load game screenshot
+document.getElementById('gamePhoto').src = 'src/2025-10-05_10.11.24.png';
+</script>
 
 <!-- Slide 6: Demo Video -->
 <div class="slide">
@@ -537,62 +487,12 @@
             <div>
                 <div style="background: rgba(167, 139, 250, 0.1); border: 3px solid rgba(167, 139, 250, 0.4); border-radius: 20px; padding: 40px; height: 100%;">
                     <h3 style="font-size: 32px; margin-bottom: 30px; color: #a78bfa;">Bill of Materials & Pricing</h3>
-                   
-                        <table class="bom-table">
-                            <thead>
-                                <tr>
-                                    <th>Lp.</th>
-                                    <th>Nazwa elementu</th>
-                                    <th>Ilość</th>
-                                    <th>Cena [PLN]</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td style="text-align: left;">ESP32 DevKit (moduł Wi-Fi + BT)</td>
-                                    <td>1</td>
-                                    <td class="price">35.00</td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td style="text-align: left;">MPU-6050 (IMU – akcelerometr + żyroskop)</td>
-                                    <td>3</td>
-                                    <td class="price">45.00</td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td style="text-align: left;">Joystick z przyciskiem (moduł XY + SW)</td>
-                                    <td>2</td>
-                                    <td class="price">10.00</td>
-                                </tr>
-                                <tr>
-                                    <td>4</td>
-                                    <td style="text-align: left;">Przewody</td>
-                                    <td>–</td>
-                                    <td class="price">5.00</td>
-                                </tr>
-                                <tr>
-                                    <td>5</td>
-                                    <td style="text-align: left;">Skarpetki partnerskie Heineken</td>
-                                    <td>1 zestaw</td>
-                                    <td><span class="badge">Bezcenne</span></td>
-                                </tr>
-                                <tr>
-                                    <td>6</td>
-                                    <td style="text-align: left;">Odstresowywacze partnerskie Ericsson</td>
-                                    <td>2 szt.</td>
-                                    <td><span class="badge">Bezcenne</span></td>
-                                </tr>
-                                <tr class="total-row">
-                                    <td colspan="3" style="text-align: right;">Suma orientacyjna (bez dodatków)</td>
-                                    <td class="price">95.00 PLN</td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                   
- 
+                    <div style="background: rgba(0, 0, 0, 0.3); border-radius: 10px; padding: 30px; height: 300px; display: flex; align-items: center; justify-content: center;">
+                        <p style="font-size: 24px; color: rgba(255, 255, 255, 0.6); text-align: center;">
+                            [BOM Table Placeholder]<br><br>
+                            Component costs and<br>pricing breakdown
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
