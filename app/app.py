@@ -8,6 +8,57 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QThread, pyqtSignal
 import parameters
 import time
+import queue
+import threading
+
+class CSVWriterThread(threading.Thread):
+    """Separate thread for async CSV writing to avoid blocking"""
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.queue = queue.Queue(maxsize=1000)
+        self.running = True
+        self.csv_file = None
+        self.csv_writer = None
+
+    def set_csv_file(self, csv_file, csv_writer):
+        self.csv_file = csv_file
+        self.csv_writer = csv_writer
+
+    def run(self):
+        batch = []
+        batch_size = 10  # Write every 10 samples
+
+        while self.running:
+            try:
+                # Get data with timeout
+                data = self.queue.get(timeout=0.1)
+                batch.append(data)
+
+                # Write batch
+                if len(batch) >= batch_size:
+                    if self.csv_writer:
+                        self.csv_writer.writerows(batch)
+                        self.csv_file.flush()
+                    batch.clear()
+
+            except queue.Empty:
+                # Flush remaining batch
+                if batch and self.csv_writer:
+                    self.csv_writer.writerows(batch)
+                    self.csv_file.flush()
+                    batch.clear()
+            except Exception as e:
+                print(f"[CSV Writer] Error: {e}")
+
+    def write_row(self, row):
+        """Non-blocking write"""
+        try:
+            self.queue.put_nowait(row)
+        except queue.Full:
+            pass  # Drop data if queue is full
+
+    def stop(self):
+        self.running = False
 
 class SerialReader(QThread):
     data_received = pyqtSignal(dict)
@@ -21,6 +72,7 @@ class SerialReader(QThread):
         self.serial_conn = None
         self.csv_file = None
         self.csv_writer = None
+        self.csv_writer_thread = None
         self.debug = debug
         
         self.column_mapping = {}
@@ -113,6 +165,11 @@ class SerialReader(QThread):
             self.csv_file = open(csv_filename, 'w', newline='')
             self.csv_writer = csv.writer(self.csv_file)
 
+            # Start CSV writer thread
+            self.csv_writer_thread = CSVWriterThread()
+            self.csv_writer_thread.set_csv_file(self.csv_file, self.csv_writer)
+            self.csv_writer_thread.start()
+
             header_found = False
             line_count = 0
             max_lines_to_search = 100
@@ -122,9 +179,10 @@ class SerialReader(QThread):
                     line = self.serial_conn.readline().decode('utf-8', errors='ignore').strip()
                     
                     if 'timestamp' in line.lower() or 'joy_' in line.lower() or 'mpu_' in line.lower():
-                        
+
+                        # Write header directly (synchronous, only once)
                         self.csv_writer.writerow(line.split(','))
-                        
+
                         if self.parse_header(line):
                             header_found = True
                 else:
@@ -150,13 +208,13 @@ class SerialReader(QThread):
                         
                         if line and ',' in line:
                             last_data_time = time.time()
-                            
+
                             values = line.split(',')
-                            
-                            # Save data
-                            self.csv_writer.writerow(values)
-                            self.csv_file.flush()
-                            
+
+                            # Save data asynchronously (non-blocking)
+                            if self.csv_writer_thread:
+                                self.csv_writer_thread.write_row(values)
+
                             data = self.parse_data_row(values)
 
                             self.data_received.emit(data)
@@ -180,11 +238,17 @@ class SerialReader(QThread):
             self.connection_status.emit(False, f"Connection failed: {e}")
         finally:
             print("[DEBUG] Entering finally block - cleaning up...")
+
+            # Stop CSV writer thread
+            if self.csv_writer_thread:
+                self.csv_writer_thread.stop()
+                self.csv_writer_thread.join(timeout=2)
+
             if self.csv_file:
                 self.csv_file.close()
             if self.serial_conn and self.serial_conn.is_open:
                 self.serial_conn.close()
-                self.is_connected = False 
+                self.is_connected = False
                 print("[DEBUG] Serial connection closed")
             print("[DEBUG] Emitting disconnected signal...")
             self.connection_status.emit(False, "Disconnected")

@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QComboBox, QLineEdit
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
 import serial.tools.list_ports
 import parameters
 from data_gathering import DataGatheringWindow
@@ -15,6 +15,69 @@ from collections import deque
 import os
 import time
 
+class GesturePredictionThread(QThread):
+    """Background thread for TensorFlow inference to avoid blocking GUI"""
+    prediction_ready = pyqtSignal(str, float)  # gesture_name, confidence
+
+    def __init__(self):
+        super().__init__()
+        self.model = None
+        self.scaler = None
+        self.label_classes = None
+        self.max_features = 6
+        self.running = False
+        self.prediction_queue = deque(maxlen=5)  # Queue of windows to predict
+
+    def set_model(self, model, scaler, label_classes):
+        self.model = model
+        self.scaler = scaler
+        self.label_classes = label_classes
+
+    def add_window(self, window_data):
+        """Add window for prediction (non-blocking)"""
+        if self.running and self.model is not None:
+            self.prediction_queue.append(window_data)
+
+    def run(self):
+        self.running = True
+        while self.running:
+            try:
+                if len(self.prediction_queue) > 0:
+                    window = self.prediction_queue.popleft()
+
+                    # Normalize
+                    window_reshaped = window.reshape(-1, self.max_features)
+
+                    # Fit scaler on first window or use existing
+                    if not hasattr(self.scaler, 'mean_'):
+                        window_normalized = self.scaler.fit_transform(window_reshaped)
+                    else:
+                        window_normalized = self.scaler.transform(window_reshaped)
+
+                    window_normalized = window_normalized.reshape(1, 35, self.max_features)
+
+                    # Predict
+                    predictions = self.model.predict(window_normalized, verbose=0)
+                    predicted_class = np.argmax(predictions[0])
+                    confidence = predictions[0][predicted_class] * 100
+
+                    gesture_name = self.label_classes[predicted_class]
+
+                    # Emit result
+                    self.prediction_ready.emit(gesture_name, confidence)
+                else:
+                    # Sleep if no work
+                    self.msleep(50)
+
+            except Exception as e:
+                print(f"[Prediction Thread] Error: {e}")
+                import traceback
+                traceback.print_exc()
+
+    def stop(self):
+        self.running = False
+        self.wait()
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -22,10 +85,10 @@ class MainWindow(QMainWindow):
         self.is_connected = False
         self.data_window = None
         self.joystick_controller = Joystick()
-        
+
         # Control mode: 'joystick' or 'gestures'
         self.control_mode = 'joystick'  # Domyślnie joystick
-        
+
         # Gesture detection components
         self.gesture_model = None
         self.gesture_scaler = None
@@ -33,22 +96,34 @@ class MainWindow(QMainWindow):
         self.gesture_buffer = deque(maxlen=35)
         self.max_features = 6
         self.gesture_enabled = False
-        
+
+        # Pre-allocated numpy array for buffer conversion (performance optimization)
+        self._buffer_array = np.zeros((35, 6), dtype=np.float32)
+
+        # Background prediction thread
+        self.prediction_thread = GesturePredictionThread()
+        self.prediction_thread.prediction_ready.connect(self.on_prediction_ready)
+
         # Cooldown system
         self.last_gesture_time = 0
-        self.cooldown_duration = 1.5  # ZOPTYMALIZOWANO: z 2.0 na 1.5s cooldown
+        self.cooldown_duration = 1.2  # OPTIMIZED: reduced from 1.5s
         self.current_gesture = None
         self.gesture_confidence = 0
-        
-        # Timer for gesture prediction
+
+        # Timer for triggering predictions
         self.gesture_timer = QTimer()
-        self.gesture_timer.timeout.connect(self.predict_gesture_in_game)
-        self.prediction_interval = 200  # ZOPTYMALIZOWANO: z 500ms na 200ms
-        
+        self.gesture_timer.timeout.connect(self.trigger_prediction)
+        self.prediction_interval = 150  # OPTIMIZED: reduced from 200ms to 150ms
+
         # Timer to reset gesture display
         self.gesture_display_timer = QTimer()
         self.gesture_display_timer.timeout.connect(self.reset_gesture_display)
-        
+
+        # Sensor data batching for performance
+        self.sensor_data_batch = []
+        self.sensor_batch_size = 3  # Process every 3 sensor updates
+        self.sensor_update_counter = 0
+
         self.init_ui()
     
     def init_ui(self):
@@ -221,10 +296,14 @@ class MainWindow(QMainWindow):
             
             # Enable gesture detection
             self.gesture_enabled = True
-            
+
+            # Set model in background thread
+            self.prediction_thread.set_model(self.gesture_model, self.gesture_scaler, self.gesture_label_classes)
+            self.prediction_thread.start()
+
             self.label.setText(f"Gesture model loaded:\n{os.path.basename(model_path)}")
             self.info_label.setText(f"Gesture: Ready (Classes: {len(self.gesture_label_classes)})")
-            
+
             print(f"Gesture model loaded: {model_path}")
             print(f"Classes: {', '.join(self.gesture_label_classes)}")
             
@@ -240,43 +319,37 @@ class MainWindow(QMainWindow):
         time_since_last = current_time - self.last_gesture_time
         return time_since_last < self.cooldown_duration
 
-    def predict_gesture_in_game(self):
-        """Predict gesture from current buffer during game mode"""
+    def trigger_prediction(self):
+        """Trigger prediction in background thread (non-blocking)"""
         if not self.gesture_enabled or self.gesture_model is None:
             return
-        
+
         # Skip prediction if in cooldown
         if self.is_in_cooldown():
             remaining = self.cooldown_duration - (time.time() - self.last_gesture_time)
             self.info_label.setText(f"Gesture: {self.current_gesture} ({self.gesture_confidence:.1f}%) - Cooldown: {remaining:.1f}s")
             return
-        
-        if len(self.gesture_buffer) < 35:  # window_size
-            self.info_label.setText(f"Gesture: Waiting... (Buffer: {len(self.gesture_buffer)}/35)")
+
+        buffer_len = len(self.gesture_buffer)
+        if buffer_len < 35:  # window_size
+            self.info_label.setText(f"Gesture: Waiting... (Buffer: {buffer_len}/35)")
             return
-        
+
         try:
-            # Create window from buffer
-            window = np.array(list(self.gesture_buffer))
-            
-            # Normalize
-            window_reshaped = window.reshape(-1, self.max_features)
-            
-            # Fit scaler on first window or use existing
-            if not hasattr(self.gesture_scaler, 'mean_'):
-                window_normalized = self.gesture_scaler.fit_transform(window_reshaped)
-            else:
-                window_normalized = self.gesture_scaler.transform(window_reshaped)
-            
-            window_normalized = window_normalized.reshape(1, 35, self.max_features)
-            
-            # Predict
-            predictions = self.gesture_model.predict(window_normalized, verbose=0)
-            predicted_class = np.argmax(predictions[0])
-            confidence = predictions[0][predicted_class] * 100
-            
-            gesture_name = self.gesture_label_classes[predicted_class]
-            
+            # OPTIMIZED: Use pre-allocated array instead of creating new one
+            # Copy buffer into pre-allocated array
+            for i, sample in enumerate(self.gesture_buffer):
+                self._buffer_array[i] = sample
+
+            # Send to background thread for prediction (copy array to avoid race condition)
+            self.prediction_thread.add_window(self._buffer_array.copy())
+
+        except Exception as e:
+            print(f"Trigger prediction error: {e}")
+
+    def on_prediction_ready(self, gesture_name, confidence):
+        """Handle prediction result from background thread"""
+        try:
             # FILTRUJ STRZAŁ - ignoruj ten gest całkowicie
             if gesture_name == "Strzal":
                 self.info_label.setText(f"Gesture: Strzal detected but ignored")
@@ -286,14 +359,14 @@ class MainWindow(QMainWindow):
                 )
                 print(f"[FILTERED] Strzal gesture ignored ({confidence:.1f}%)")
                 return  # Wyjdź bez wykonywania akcji
-            
+
             # Only act if confidence is high enough
             if confidence > 70:
                 # Store current gesture info
                 self.current_gesture = gesture_name
                 self.gesture_confidence = confidence
                 self.last_gesture_time = time.time()
-                
+
                 # Update display
                 color = "#4CAF50" if confidence > 80 else "#FF9800"
                 self.info_label.setText(f"Gesture: {gesture_name} ({confidence:.1f}%) ✓")
@@ -301,15 +374,15 @@ class MainWindow(QMainWindow):
                     f"font-size: 16px; padding: 15px; background-color: {color}20; "
                     f"border: 2px solid {color}; border-radius: 5px; color: {color}; font-weight: bold;"
                 )
-                
+
                 # Execute gesture action
                 self.execute_gesture_action(gesture_name)
-                
+
                 # Clear buffer to prevent re-detection
                 self.gesture_buffer.clear()
-                
+
                 print(f"[GESTURE DETECTED] {gesture_name} with {confidence:.1f}% confidence - Cooldown started")
-                
+
                 # Start timer to reset display after cooldown
                 self.gesture_display_timer.stop()
                 self.gesture_display_timer.start(int(self.cooldown_duration * 1000))
@@ -319,9 +392,9 @@ class MainWindow(QMainWindow):
                 self.info_label.setStyleSheet(
                     "font-size: 16px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;"
                 )
-            
+
         except Exception as e:
-            print(f"Prediction error: {e}")
+            print(f"Prediction ready error: {e}")
             import traceback
             traceback.print_exc()
 
@@ -549,22 +622,22 @@ class MainWindow(QMainWindow):
             )
 
     def update_sensor_data(self, data):
-        """Update GUI with sensor data from Arduino"""
-        
-        # Zapisz dane joysticka do parameters
+        """Update GUI with sensor data from Arduino - OPTIMIZED with batching"""
+
+        # Always update joystick parameters (critical for control)
         parameters.joystick_left_x = data['joy_lx']
         parameters.joystick_left_y = data['joy_ly']
         parameters.joystick_left_button = data['joy_lb']
-        parameters.joystick_right_x = data['joy_rx'] 
+        parameters.joystick_right_x = data['joy_rx']
         parameters.joystick_right_y = data['joy_ry']
         parameters.joystick_right_button = data['joy_rb']
-        
+
         # Jeśli jesteś w trybie Game
         if parameters.game_state == "Game":
             # TRYB JOYSTICK - sterowanie joystickami
             if self.control_mode == 'joystick':
                 self.joystick_controller.update()
-            
+
             # TRYB GESTÓW - wykrywanie gestów
             elif self.control_mode == 'gestures' and self.gesture_enabled and not self.is_in_cooldown():
                 sensor_values = [
@@ -578,18 +651,22 @@ class MainWindow(QMainWindow):
                 # Take only first 6 features
                 sensor_values = sensor_values[:self.max_features]
                 self.gesture_buffer.append(sensor_values)
-            
-            # Aktualizuj label z danymi czujników
-            status_text = f"IMU Data:\n"
-            status_text += f"MPU Accel: ({data['mpu_ax']:.2f}, {data['mpu_ay']:.2f}, {data['mpu_az']:.2f}) m/s²\n"
-            status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
-            status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
-            status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}\n"
-            status_text += f"Tryb: {self.control_mode.upper()}\n"
-            if self.control_mode == 'gestures' and self.gesture_enabled:
-                status_text += f"Buffer: {len(self.gesture_buffer)}/20"
-            self.label.setText(status_text)
-        
+
+            # OPTIMIZED: Update label only every N updates to reduce GUI repaints
+            self.sensor_update_counter += 1
+            if self.sensor_update_counter >= self.sensor_batch_size:
+                self.sensor_update_counter = 0
+
+                status_text = f"IMU Data:\n"
+                status_text += f"MPU Accel: ({data['mpu_ax']:.2f}, {data['mpu_ay']:.2f}, {data['mpu_az']:.2f}) m/s²\n"
+                status_text += f"MPU Gyro: ({data['mpu_gx']:.2f}, {data['mpu_gy']:.2f}, {data['mpu_gz']:.2f}) rad/s\n"
+                status_text += f"Joystick L: ({data['joy_lx']}, {data['joy_ly']}) Btn: {data['joy_lb']}\n"
+                status_text += f"Joystick R: ({data['joy_rx']}, {data['joy_ry']}) Btn: {data['joy_rb']}\n"
+                status_text += f"Tryb: {self.control_mode.upper()}\n"
+                if self.control_mode == 'gestures' and self.gesture_enabled:
+                    status_text += f"Buffer: {len(self.gesture_buffer)}/35"
+                self.label.setText(status_text)
+
         # Zapisuj do CSV tylko gdy jest okno data gathering i jest nagrywanie
         if self.data_window and self.data_window.is_recording:
             self.data_window.record_data(data)

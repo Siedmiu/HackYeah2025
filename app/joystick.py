@@ -1,30 +1,35 @@
 import pyautogui
 import parameters
+import time
 
 class Joystick():
     def __init__(self):
         # Joystick range 0-4095 (12-bit ADC)
         self.min_value = 0
         self.max_value = 4095
-        self.center = 2048         
-        
+        self.center = 2048
+
         # Zwiększona strefa martwa - reaguj tylko na wyraźne wychylenie
         self.deadzone_radius = 600  # Zwiększono z 300 na 600
         self.deadzone_min = self.center - self.deadzone_radius
         self.deadzone_max = self.center + self.deadzone_radius
-        
+
         # Prędkość ruchu
         self.movement_speed = 10
         self.camera_sensitivity = 10  # Zwiększono czułość kamery
-        
+
         self.prev_left_button = 0
         self.prev_right_button = 0
-        
+
         # WSAD and arrows mapping
         self.wsad_keys = {'up': 'a', 'down': 'd', 'left': 's', 'right': 'w'}
         self.arrow_keys = {'up': 'left', 'down': 'right', 'left': 'down', 'right': 'up'}
-        
+
         self.pressed_keys = set()
+
+        # Rate limiting for mouse movements
+        self.last_mouse_move_time = 0
+        self.mouse_move_min_interval = 0.016  # ~60Hz max (16ms)
 
     def update(self):
         if parameters.game_state != "Game":
@@ -83,25 +88,31 @@ class Joystick():
             self.pressed_keys.add(key)
 
     def handle_camera_movement(self, x, y):
+        # Rate limiting - only move mouse if enough time has passed
+        current_time = time.time()
+        if current_time - self.last_mouse_move_time < self.mouse_move_min_interval:
+            return  # Skip this update
+
         offset_x = 0
         offset_y = 0
-        
+
         if x < self.deadzone_min:
             normalized = (x - self.deadzone_min) / (self.deadzone_min - self.min_value)
             offset_x = normalized * self.camera_sensitivity
         elif x > self.deadzone_max:
             normalized = (x - self.deadzone_max) / (self.max_value - self.deadzone_max)
             offset_x = normalized * self.camera_sensitivity
-        
+
         if y < self.deadzone_min:
             normalized = (y - self.deadzone_min) / (self.deadzone_min - self.min_value)
             offset_y = normalized * self.camera_sensitivity
         elif y > self.deadzone_max:
             normalized = (y - self.deadzone_max) / (self.max_value - self.deadzone_max)
             offset_y = normalized * self.camera_sensitivity
-        
+
         if offset_x != 0 or offset_y != 0:
             pyautogui.moveRel(int(offset_x), int(offset_y))
+            self.last_mouse_move_time = current_time
 
     def handle_button(self, current_state, previous_state, key_binding):
         if key_binding is None:

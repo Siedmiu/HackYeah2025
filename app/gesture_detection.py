@@ -29,13 +29,16 @@ class GestureDetectionWindow(QDialog):
             'Syf': ['mpu_ax', 'mpu_ay', 'mpu_az', 'adxl_ax', 'adxl_ay', 'adxl_az']
         }
         
-        # Buffer for sliding window - ZOPTYMALIZOWANO dla szybszego wykrywania
-        self.window_size = 35  # Zmniejszono z 35 na 20 próbek
+        # Buffer for sliding window - OPTIMIZED
+        self.window_size = 35
         self.max_features = 6  # Must match training padding
         self.data_buffer = deque(maxlen=self.window_size)
-        
-        # Detection settings - ZOPTYMALIZOWANO
-        self.prediction_interval = 200  # ms - predict every 200ms (było 500ms)
+
+        # Pre-allocated numpy array for performance
+        self._buffer_array = np.zeros((self.window_size, self.max_features), dtype=np.float32)
+
+        # Detection settings - OPTIMIZED
+        self.prediction_interval = 150  # ms - predict every 150ms (optimized from 200ms)
         self.timer = QTimer()
         self.timer.timeout.connect(self.predict_gesture)
         
@@ -266,30 +269,31 @@ class GestureDetectionWindow(QDialog):
         self.buffer_label.setText(f"Buffer: {len(self.data_buffer)}/{self.window_size} samples")
     
     def predict_gesture(self):
-        """Make prediction from current buffer"""
+        """Make prediction from current buffer - OPTIMIZED"""
         if len(self.data_buffer) < self.window_size:
             return
-        
+
         try:
-            # Create window from buffer
-            window = np.array(list(self.data_buffer))
-            
+            # OPTIMIZED: Use pre-allocated array
+            for i, sample in enumerate(self.data_buffer):
+                self._buffer_array[i] = sample
+
             # Normalize
-            window_reshaped = window.reshape(-1, self.max_features)
-            
+            window_reshaped = self._buffer_array.reshape(-1, self.max_features)
+
             # Fit scaler on first window or use existing
             if not hasattr(self.scaler, 'mean_'):
                 window_normalized = self.scaler.fit_transform(window_reshaped)
             else:
                 window_normalized = self.scaler.transform(window_reshaped)
-            
+
             window_normalized = window_normalized.reshape(1, self.window_size, self.max_features)
-            
+
             # Predict
             predictions = self.model.predict(window_normalized, verbose=0)
             predicted_class = np.argmax(predictions[0])
             confidence = predictions[0][predicted_class] * 100
-            
+
             gesture_name = self.label_classes[predicted_class]
             
             # Update display
