@@ -11,6 +11,8 @@ It uses **three IMUs** (Inertial Measurement Units) - one on each hand and one o
 Our goal is to let **anyone — kids, parents, or hobbyists — build their own motion controller** using accessible hardware and open software tools.  
 You can build it, play, and stay active while gaming - without needing expensive VR systems or proprietary gear. You don't need to generate whole personal dataset - just add files with your specific gestures to our - literally plug and play.
 
+https://youtube.com/shorts/PNGoJlM1TY0?si=B0IRf1yLYddQADC-
+
 ---
 
 ## How It Works
