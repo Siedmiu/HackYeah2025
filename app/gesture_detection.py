@@ -30,7 +30,7 @@ class GestureDetectionWindow(QDialog):
         }
         
         # Buffer for sliding window (50 samples)
-        self.window_size = 35 #50
+        self.window_size = 20
         self.max_features = 6  # Must match training padding
         self.data_buffer = deque(maxlen=self.window_size)
         
