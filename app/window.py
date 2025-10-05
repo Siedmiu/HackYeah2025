@@ -122,7 +122,7 @@ class MainWindow(QMainWindow):
         self.button_hotkey.setFixedSize(200, 50)
         layout.addWidget(self.button_hotkey, alignment=Qt.AlignCenter)
 
-         # self.detect_btn = QPushButton("Detect Movement")
+        # self.detect_btn = QPushButton("Detect Movement")
         # self.detect_btn.clicked.connect(self.open_gesture_detection)
         # self.detect_btn.setFixedSize(200, 50)  # Changed from self.button_hotkey to self.detect_btn
         # layout.addWidget(self.detect_btn, alignment=Qt.AlignCenter)  # Changed from self.button_hotkey to self.detect_btn
